@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlockHub Chess Arena</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+
+<style>
+:root{
+  --bg:#0b0f14; --panel:#121820; --panel2:#18212c; --line:#263442;
+  --text:#f4f7fb; --muted:#8e9aaa; --green:#81b64c; --green2:#a3d35c;
+  --light:#f0d9b5; --dark:#b58863; --accent:#d8a84e; --danger:#e05b5b;
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:radial-gradient(circle at 50% -10%,#1a2634 0,#0b0f14 52%);color:var(--text)}
+button,input{font:inherit}
+button{cursor:pointer}
+.app{min-height:100vh;display:grid;grid-template-columns:240px 1fr}
+.sidebar{background:#0d131a;border-right:1px solid var(--line);padding:20px 14px;display:flex;flex-direction:column;gap:18px}
+.brand{display:flex;align-items:center;gap:10px;padding:8px 10px 18px;border-bottom:1px solid var(--line)}
+.brand-icon{font-size:34px}.brand strong{font-size:20px}.brand small{display:block;color:var(--muted);margin-top:2px}
+.nav{display:grid;gap:6px}.nav button{background:transparent;border:0;color:#c7d0da;text-align:left;padding:12px 14px;border-radius:10px;font-weight:700}.nav button:hover,.nav button.active{background:#1b2733;color:#fff}
+.sidebar-card{margin-top:auto;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.sidebar-card b{display:block;margin-bottom:6px}.sidebar-card p{font-size:12px;line-height:1.5;color:var(--muted);margin:0}
+.main{padding:24px 28px 40px;max-width:1500px;width:100%;margin:auto}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}.topbar h1{font-size:24px;margin:0}.topbar p{margin:5px 0 0;color:var(--muted);font-size:13px}
+.connection-pill{display:flex;align-items:center;gap:8px;background:#121a23;border:1px solid var(--line);padding:9px 13px;border-radius:999px;color:var(--muted);font-size:13px}.dot{width:8px;height:8px;border-radius:50%;background:#66727f}.dot.ok{background:var(--green);box-shadow:0 0 10px #81b64c}
+.arena{display:grid;grid-template-columns:minmax(500px,760px) 360px;gap:22px;align-items:start}
+.board-card{background:#0f151c;border:1px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.player-strip{display:flex;align-items:center;justify-content:space-between;padding:4px 6px 12px}.player{display:flex;align-items:center;gap:10px}.avatar{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:#283440;font-size:20px}.player-name{font-weight:800}.player-sub{font-size:11px;color:var(--muted);margin-top:2px}.clock{font-size:22px;font-weight:900;background:#1a222c;border:1px solid var(--line);padding:7px 12px;border-radius:8px;min-width:84px;text-align:center}
+.board-wrap{display:flex;justify-content:center}.board{width:min(72vh,720px,78vw);height:min(72vh,720px,78vw);aspect-ratio:1/1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));border-radius:5px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.square{position:relative;width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;aspect-ratio:1/1}.light{background:var(--light)}.dark{background:var(--dark)}
+.square.selected{box-shadow:inset 0 0 0 4px #f6d35f}.square.last{background:#c8b458}.square.check{box-shadow:inset 0 0 0 999px rgba(215,55,55,.45)}.square.legal::after{content:"";width:18%;height:18%;border-radius:50%;background:rgba(25,30,35,.35);position:absolute}.square.capture::after{content:"";position:absolute;inset:6%;border:5px solid rgba(45,45,45,.42);border-radius:50%}
+.piece{font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;font-size:clamp(38px,6.1vw,74px);line-height:1;position:relative;z-index:2;transform:translateY(-1px);filter:drop-shadow(0 3px 2px rgba(0,0,0,.28));font-weight:500}.white-piece{color:#f8f8f8;text-shadow:0 1px 0 #fff,0 3px 2px rgba(0,0,0,.48),0 0 1px #222}.black-piece{color:#252525;text-shadow:0 1px 0 rgba(255,255,255,.55),0 3px 2px rgba(0,0,0,.55),0 0 1px #000}
+.rank,.file{position:absolute;font-size:11px;font-weight:900;z-index:3;opacity:.75}.rank{left:5px;top:4px}.file{right:5px;bottom:4px}.light .rank,.light .file{color:#65707b}.dark .rank,.dark .file{color:#e8edf2}
+.board-bottom{display:flex;justify-content:space-between;align-items:center;padding:12px 5px 2px;color:var(--muted);font-size:12px}
+.side{display:grid;gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}.card h3{margin:0 0 12px;font-size:15px}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;background:#0e141b;border-radius:9px;padding:3px;gap:3px}.tabs button{border:0;background:transparent;color:var(--muted);padding:9px 5px;border-radius:7px;font-weight:800;font-size:12px}.tabs button.active{background:#263442;color:#fff}
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode{background:#18222d;border:1px solid var(--line);border-radius:10px;padding:11px;color:#dbe2e9;text-align:left}.mode:hover,.mode.active{border-color:var(--green);background:#1d2a21}.mode b{display:block}.mode span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.p2p-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#0e141b;color:#fff;text-align:center;letter-spacing:4px;font-weight:900}.btn{border:0;border-radius:8px;padding:10px 12px;font-weight:800}.btn.primary{background:var(--green);color:#10200b}.btn.secondary{background:#25323e;color:#fff}.btn.danger{background:#4a2225;color:#ffb0b0}.btn.full{width:100%}
+.room-code{font-size:21px;letter-spacing:6px;text-align:center;background:#0d141b;border:1px dashed #51616f;padding:9px;border-radius:8px;color:#f4d35e;font-weight:900;margin:9px 0}
+.status{font-size:12px;color:var(--muted);margin-top:8px}.status.ok{color:var(--green2)}.status.err{color:#ff8585}
+.game-status{min-height:36px;color:#c9d2dc;font-size:13px;line-height:1.45}.turn{font-weight:900;font-size:16px;margin-bottom:5px}
+.moves{max-height:230px;overflow:auto;background:#0e141b;border-radius:9px;padding:8px}.move-row{display:grid;grid-template-columns:30px 1fr 1fr;padding:6px;border-bottom:1px solid #1e2934;font-size:13px}.move-no{color:var(--muted)}.move-row span:nth-child(2),.move-row span:nth-child(3){font-weight:700}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions .full{grid-column:1/-1}
+.promotion{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;place-items:center;z-index:20}.promotion.show{display:grid}.promotion-card{background:#151d26;border:1px solid var(--line);border-radius:14px;padding:20px}.promotion-buttons{display:flex;gap:10px;margin-top:12px}.promo{width:70px;height:70px;border:1px solid var(--line);background:#222d38;border-radius:10px;font-size:45px}
+.toast{position:fixed;left:50%;bottom:25px;transform:translateX(-50%) translateY(20px);opacity:0;background:#151d26;border:1px solid var(--line);padding:11px 16px;border-radius:10px;transition:.2s;z-index:30}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:1050px){.app{grid-template-columns:1fr}.sidebar{display:none}.main{padding:16px}.arena{grid-template-columns:1fr}.board{width:min(92vw,720px);height:min(92vw,720px)}}
+
+.gameover-modal{position:fixed;inset:0;background:rgba(4,7,10,.72);backdrop-filter:blur(6px);display:none;place-items:center;z-index:50}
+.gameover-modal.show{display:grid}
+.gameover-card{width:min(420px,calc(100vw - 32px));background:linear-gradient(180deg,#1b2530,#111820);border:1px solid #334352;border-radius:18px;padding:30px 28px;text-align:center;box-shadow:0 30px 100px rgba(0,0,0,.55)}
+.gameover-icon{font-size:68px;line-height:1;margin-bottom:8px;filter:drop-shadow(0 5px 5px rgba(0,0,0,.35))}
+.gameover-kicker{font-size:11px;font-weight:900;letter-spacing:2px;color:#8d9baa}
+.gameover-card h2{font-size:28px;margin:8px 0 6px}
+.gameover-card p{color:#aeb9c5;margin:0 0 20px}
+.gameover-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+
+/* ===== Skins System ===== */
+.skin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.skin-btn{border:1px solid var(--line);background:#18222d;border-radius:10px;padding:8px;color:#fff;font-size:11px;font-weight:800}
+.skin-btn.active{outline:2px solid var(--green)}
+.piece-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.skin-preview{height:45px;border-radius:7px;margin-bottom:5px}
+.board-wood .light{background:#f0d9b5}.board-wood .dark{background:#b58863}
+.board-green .light{background:#dbe7c8}.board-green .dark{background:#769656}
+.board-blue .light{background:#d8efff}.board-blue .dark{background:#5b88b2}
+.board-dark .light{background:#777}.board-dark .dark{background:#222}
+
+.username-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:100}
+.username-modal.show{display:grid}
+.username-card{background:#151d26;border:1px solid #334352;border-radius:16px;padding:25px;width:min(360px,90vw);text-align:center}
+.username-card input{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line);background:#0e141b;color:white;margin:15px 0}
+</style>
+
+</head>
+
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-icon">♟</div><div><strong>BlockHub</strong><small>Chess Arena</small></div></div>
+    <div class="nav">
+      <button class="active">♟ Play</button>
+      <button onclick="showToast('Puzzle mode coming soon')">◆ Puzzles</button>
+      <button onclick="showToast('Learn mode coming soon')">▣ Learn</button>
+      <button onclick="showToast('Watch mode coming soon')">▶ Watch</button>
+    </div>
+    <div class="sidebar-card"><b>Play your way</b><p>Play with a friend using P2P, against a bot, or practice locally.</p></div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div><h1>Chess Arena</h1><p>Fast chess game with a modern interface</p></div>
+      <div class="connection-pill"><span class="dot" id="connectionDot"></span><span id="connectionPill">Offline</span></div>
+    </div>
+
+    <div class="arena">
+      <section class="board-card">
+        <div class="player-strip">
+          <div class="player"><div class="avatar" id="topAvatar">♚</div><div><div class="player-name" id="topName">Opponent</div><div class="player-sub" id="topSub">Waiting for game</div></div></div>
+          <div class="clock" id="topClock">10:00</div>
+        </div>
+
+        <div class="board-wrap"><div class="board" id="board"></div></div>
+
+        <div class="board-bottom"><span id="boardHint">Choose a mode on the right</span><span id="gameResult">—</span></div>
+
+        <div class="player-strip">
+          <div class="player"><div class="avatar">♔</div><div><div class="player-name" id="bottomName">You</div><div class="player-sub" id="bottomSub">Ready</div></div></div>
+          <div class="clock" id="bottomClock">10:00</div>
+        </div>
+      </section>
+
+      <aside class="side">
+        <div class="card">
+          <div class="tabs">
+            <button class="active" id="tabPlay">Play</button><button id="tabP2P">P2P</button><button id="tabBot">Bots</button>
+          </div>
+        </div>
+
+        <div class="card" id="playCard">
+          <h3>Choose a game</h3>
+          <div class="mode-grid">
+            <button class="mode active" id="modeBot"><b>🤖 vs Bot</b><span>train yourself</span></button>
+            <button class="mode" id="modeP2P"><b>🌐 P2P 1v1</b><span>With a friend</span></button>
+            <button class="mode" id="modeLocal"><b>👥 Local 2P</b><span>on one screen</span></button>
+            <button class="mode" id="modeRandom"><b>⚡ Quick Bot</b><span>Fast game</span></button>
+          </div>
+        </div>
+
+        <div class="card" id="botCard">
+          <h3>Bot opponent</h3>
+          <div class="mode-grid">
+            <button class="mode active" data-level="1">🟢 <b>Easy</b><span>Random good moves</span></button>
+            <button class="mode" data-level="2">🟡 <b>Medium</b><span>Material + position</span></button>
+            <button class="mode" data-level="3">🔴 <b>Hard</b><span>Search deeper</span></button>
+          </div>
+        </div>
+
+        <div class="card" id="p2pCard" style="display:none">
+          <h3>Online P2P</h3>
+          <button class="btn primary full" id="hostBtn">Create 4-digit code</button>
+          <div class="room-code" id="roomCode">----</div>
+          <div class="p2p-row">
+            <input class="field" id="joinCode" maxlength="4" inputmode="numeric" placeholder="4 digits">
+            <button class="btn secondary" id="joinBtn">Join</button>
+          </div>
+          <div style="margin-top:8px"><button class="btn danger full" id="disconnectBtn">Leave room</button></div>
+           <div style="margin-top:12px">
+             <div id="chatMessages" style="height:140px;overflow:auto;background:#0e141b;border-radius:9px;padding:8px;font-size:12px;margin-bottom:8px"></div>
+             <div class="p2p-row">
+               <input class="field" id="chatInput" placeholder="Message" style="letter-spacing:0">
+               <button class="btn secondary" id="chatSend">Send</button>
+             </div>
+           </div>
+           <div class="status" id="p2pStatus">P2P: Not connected</div>
+        </div>
+
+        <div class="card">
+          <div class="turn" id="turnText">Choose a mode</div>
+          <div class="game-status" id="gameStatus">You can play against a bot or create a P2P room.</div>
+        </div>
+
+        
+<div class="card">
+<h3>🎨 Skins</h3>
+<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Board skins</div>
+<div class="skin-grid">
+<button class="skin-btn active" data-board-skin="wood"><div class="skin-preview board-wood"></div>Wood</button>
+<button class="skin-btn" data-board-skin="green"><div class="skin-preview board-green"></div>Green</button>
+<button class="skin-btn" data-board-skin="blue"><div class="skin-preview board-blue"></div>Ice</button>
+<button class="skin-btn" data-board-skin="dark"><div class="skin-preview board-dark"></div>Dark</button>
+</div>
+<div style="font-size:12px;color:var(--muted);margin:12px 0 8px">Pieces</div>
+<div class="piece-grid">
+<button class="skin-btn active" data-piece="classic">♟ Classic</button>
+<button class="skin-btn" data-piece="emoji">😀 Emoji</button>
+<button class="skin-btn" data-piece="wood">🪵 Wood 3D</button>
+<button class="skin-btn" data-piece="gold">👑 Gold Royal</button>
+<button class="skin-btn" data-piece="silver">⚙️ Metal</button>
+<button class="skin-btn" data-piece="neon">💠 Neon</button>
+<button class="skin-btn" data-piece="fantasy">🧙 Fantasy</button>
+<button class="skin-btn" data-piece="minimal">⚪ Minimal</button>
+</div>
+</div>
+
+<div class="card">
+          <h3>Moves</h3>
+          <div class="moves" id="moves"><div style="color:var(--muted);padding:6px">Няма ходове.</div></div>
+        </div>
+
+        <div class="card actions">
+          <button class="btn secondary" id="newGameBtn">New game</button>
+          <button class="btn secondary" id="flipBtn">Flip board</button>
+          <button class="btn secondary full" id="resignBtn">Resign</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<div class="promotion" id="promotion">
+  <div class="promotion-card"><h3>Choose promotion</h3><div class="promotion-buttons">
+    <button class="promo" data-p="q">♕</button><button class="promo" data-p="r">♖</button><button class="promo" data-p="b">♗</button><button class="promo" data-p="n">♘</button>
+  </div></div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="gameover-modal" id="gameoverModal" aria-hidden="true">
+  <div class="gameover-card">
+    <div class="gameover-icon" id="gameoverIcon">♛</div>
+    <div class="gameover-kicker">GAME OVER</div>
+    <h2 id="gameoverTitle">Checkmate</h2>
+    <p id="gameoverText">White wins by checkmate.</p>
+    <div class="gameover-actions">
+      <button class="btn primary" id="gameoverNew">New Game</button>
+      <button class="btn secondary" id="gameoverClose">Close</button>
+    </div>
+  </div>
+</div>
+
+
+
+<div class="username-modal" id="usernameModal">
+ <div class="username-card">
+  <h2>♟ Welcome</h2>
+  <p>Choose your username</p>
+  <input id="usernameInput" maxlength="20" placeholder="Username">
+  <button class="btn primary full" id="usernameSave">Continue</button>
+ </div>
+</div>
+<script>
+'use strict';
+const PIECES={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
+const FILES=['a','b','c','d','e','f','g','h'];
+let chess=new Chess(), selected=null, lastMove=null, peer=null, conn=null, roomId=null, myColor=null;
+let whiteTime=600, blackTime=600, clockTimer=null, gameClockRunning=false;
+let connected=false, isHost=false, mode='bot', botLevel=1, flipped=false, botThinking=false, promotionResolve=null;
+let username=localStorage.getItem('chess_username')||'';
+let opponentUsername='Opponent';
+
+const $=id=>document.getElementById(id);
+
+function updatePlayerNames(){
+  if(username) $('bottomName').textContent=username;
+  if(opponentUsername && opponentUsername!=='Opponent') $('topName').textContent=opponentUsername;
+}
+
+function setupUsername(){
+ if(username){ $('bottomName').textContent=username; return; }
+ $('usernameModal').classList.add('show');
+}
+function saveUsername(){
+ const n=$('usernameInput').value.trim();
+ if(!n)return;
+ username=n;
+ localStorage.setItem('chess_username',username);
+ $('usernameModal').classList.remove('show');
+ $('bottomName').textContent=username;
+}
+
+const boardEl=$('board'), roomCodeEl=$('roomCode'), joinCodeEl=$('joinCode'), p2pStatusEl=$('p2pStatus');
+const turnTextEl=$('turnText'), gameStatusEl=$('gameStatus'), movesEl=$('moves');
+
+
+
+let boardSkin='wood', pieceSkin='classic';
+function applySkins(){
+  boardEl.classList.remove('board-wood','board-green','board-blue','board-dark');
+  boardEl.classList.add('board-'+boardSkin);
+  renderBoard();
+}
+function pieceIcon(color,type){
+ const sets={
+  emoji:{p:'👤',n:'🐴',b:'⛪',r:'🏰',q:'👑',k:'🤴'},
+  wood:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
+  gold:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},
+  silver:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
+  neon:{p:'◉',n:'♞',b:'◆',r:'▣',q:'✦',k:'★'},
+  fantasy:{p:'🛡️',n:'🐉',b:'🧙',r:'🏰',q:'👸',k:'🤴'},
+  minimal:{p:'●',n:'♞',b:'▲',r:'■',q:'◆',k:'✚'}
+ };
+ if(sets[pieceSkin]) return sets[pieceSkin][type];
+ return PIECES[color][type];
+}
+
+function showToast(t){const e=$('toast');e.textContent=t;e.classList.add('show');clearTimeout(showToast.t);showToast.t=setTimeout(()=>e.classList.remove('show'),1800)}
+function setStatus(t,type=''){p2pStatusEl.textContent='P2P: '+t;p2pStatusEl.className='status '+type}
+function randomCode(){return String(Math.floor(1000+Math.random()*9000))}
+function send(msg){if(conn&&conn.open)conn.send(msg)}
+function addChat(text,me=false,name=''){const box=$('chatMessages');if(!box)return;const row=document.createElement('div');row.style.marginBottom='6px';row.textContent=(name|| (me?username:opponentUsername))+': '+text;box.appendChild(row);box.scrollTop=box.scrollHeight;}
+function sendChat(){const input=$('chatInput');const text=input.value.trim();if(!text)return;addChat(text,true,username||'Player');send({type:'chat',text,name:username});input.value='';}
+
+
+let roomRefreshBusy=false;
+
+function renderRoomList(peers){
+  const list=$('roomList'), count=$('roomCount');
+  list.innerHTML='';
+  const rooms=(peers||[])
+    .map(String)
+    .map(id=>({id,code:(id.match(/^blockhub-chess-(\d{4})$/)||[])[1]}))
+    .filter(x=>x.code)
+    .slice(0,20);
+
+  count.textContent='('+rooms.length+')';
+
+  if(!rooms.length){
+    list.innerHTML='<div class="room-empty">No available rooms found.</div>';
+    return;
+  }
+
+  rooms.forEach((room,i)=>{
+    const row=document.createElement('div');
+    row.className='room-item';
+    row.innerHTML=
+      '<div class="room-player">♟ Player '+(i+1)+'</div>'+
+      '<div class="room-code-mini">'+room.code+'</div>'+
+      '<button class="room-join" data-room="'+room.code+'">JOIN</button>';
+    row.querySelector('.room-join').onclick=()=>joinRoomCode(room.code);
+    list.appendChild(row);
+  });
+}
+
+function refreshRooms(){
+  if(roomRefreshBusy)return;
+  roomRefreshBusy=true;
+  const btn=$('refreshRoomsBtn');
+  btn.disabled=true;
+  btn.textContent='Searching…';
+
+  if(!window.Peer){
+    renderRoomList([]);
+    btn.disabled=false;btn.textContent='↻ Refresh';roomRefreshBusy=false;
+    return;
+  }
+
+  // PeerJS exposes listAllPeers only when the signaling server has discovery enabled.
+  // We use the public PeerJS service already used by this file; no local server is needed.
+  const probe=new Peer();
+  let finished=false;
+
+  const finish=(peers)=>{
+    if(finished)return;
+    finished=true;
+    try{probe.destroy()}catch(e){}
+    renderRoomList(peers||[]);
+    btn.disabled=false;btn.textContent='↻ Refresh';roomRefreshBusy=false;
+  };
+
+  const timer=setTimeout(()=>finish([]),7000);
+
+  probe.on('open',()=>{
+    if(typeof probe.listAllPeers!=='function'){
+      clearTimeout(timer);finish([]);return;
+    }
+    try{
+      probe.listAllPeers(peers=>{
+        clearTimeout(timer);finish(peers);
+      });
+    }catch(e){
+      clearTimeout(timer);console.error(e);finish([]);
+    }
+  });
+
+  probe.on('error',e=>{
+    clearTimeout(timer);
+    console.warn('Room discovery unavailable:',e);
+    finish([]);
+  });
+}
+
+function joinRoomCode(code){
+  joinCodeEl.value=code;
+  join();
+}
+
+function cleanup(){
+  if(conn){try{conn.close()}catch(e){} conn=null}
+  if(peer){try{peer.destroy()}catch(e){} peer=null}
+  connected=false; myColor=null; roomId=null; isHost=false;
+  roomCodeEl.textContent='----'; setStatus('not connected');
+  $('connectionDot').classList.remove('ok'); $('connectionPill').textContent='Offline';
+}
+function newBoard(){hideGameOverModal();chess=new Chess();selected=null;lastMove=null;botThinking=false;renderBoard();renderInfo();renderMoves()}
+function setOnlineUI(ok){$('connectionDot').classList.toggle('ok',ok);$('connectionPill').textContent=ok?'P2P Connected':'Offline'}
+
+function setupConn(c,color,host){
+  conn=c;myColor=color;isHost=host;
+  conn.on('open',()=>{
+    connected=true;setStatus('connected — WebRTC P2P data channel is working','ok');setOnlineUI(true);
+    $('bottomName').textContent=color==='w'?username+' — White':opponentUsername+' — White';
+    $('topName').textContent=color==='b'?username+' — Black':opponentUsername+' — Black';
+    send({type:'username',name:username});
+     if(isHost){newBoard();send({type:'start',fen:chess.fen(),history:chess.history()})} else send({type:'ready'});
+    renderInfo();
+  });
+  conn.on('data',handleData);
+  conn.on('close',()=>{connected=false;setOnlineUI(false);setStatus('the connection is broken','err');gameStatusEl.textContent='The opponent left the party.'});
+  conn.on('error',e=>{console.error(e);setStatus('connection error','err')});
+}
+function host(){
+  cleanup(); mode='p2p'; roomId=randomCode(); roomCodeEl.textContent=roomId; isHost=true; myColor='w'; setStatus('creating a room...');
+  peer=new Peer('blockhub-chess-'+roomId);
+  peer.on('open',()=>{setStatus('waiting for opponent…','ok');setOnlineUI(false);showToast('Code ready: '+roomId);setTimeout(refreshRooms,250)});
+  peer.on('connection',c=>setupConn(c,'w',true));
+  peer.on('error',e=>{console.error(e);setStatus(e.type==='unavailable-id'?'code is busy — create a new code':'error: '+e.type,'err')});
+}
+function join(){
+  const code=joinCodeEl.value.trim();
+  if(!/^\d{4}$/.test(code)){setStatus('enter exactly 4 digits','err');return}
+  cleanup();mode='p2p';roomId=code;roomCodeEl.textContent=code;myColor='b';setStatus('connecting…');
+  peer=new Peer();
+  peer.on('open',()=>setupConn(peer.connect('blockhub-chess-'+code,{reliable:true}),'b',false));
+  peer.on('error',e=>{console.error(e);setStatus('неуспешно свързване: '+e.type,'err')});
+}
+function handleData(data){
+  if(!data||typeof data!=='object')return;
+  if(data.type==='username'){opponentUsername=data.name||'Opponent';updatePlayerNames();return;}
+  if(data.type==='chat'){addChat(data.text,false,data.name||opponentUsername);}
+  else if(data.type==='start'){chess=new Chess(data.fen);selected=null;lastMove=null;renderBoard();renderInfo();renderMoves()}
+  else if(data.type==='ready'&&isHost)send({type:'start',fen:chess.fen(),history:chess.history()});
+  else if(data.type==='move'){
+    try{const m=chess.move(data.move);if(!m)return;lastMove={from:data.move.from,to:data.move.to};selected=null;renderBoard();renderInfo();renderMoves()}catch(e){console.error(e)}
+  } else if(data.type==='newgame'){newBoard()}
+  else if(data.type==='resign'){gameStatusEl.textContent='The opponent has given up. You win!';$('gameResult').textContent='1–0 / 0–1'}
+}
+
+function squareName(row,col){return FILES[col]+(8-row)}
+function renderBoard(){
+  boardEl.innerHTML='';
+  const legal=selected?chess.moves({square:selected,verbose:true}):[];
+  for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){
+    const r=flipped?7-vr:vr,c=flipped?7-vc:vc,sq=squareName(r,c);
+    const el=document.createElement('div');el.className='square '+((r+c)%2===0?'light':'dark');
+    if(sq===selected)el.classList.add('selected');if(lastMove&&(sq===lastMove.from||sq===lastMove.to))el.classList.add('last');
+    const lm=legal.find(m=>m.to===sq);if(lm)el.classList.add(chess.get(sq)?'capture':'legal');
+    const p=chess.get(sq);if(p){const span=document.createElement('span');span.className='piece '+(p.color==='w'?'white-piece':'black-piece');span.textContent=pieceIcon(p.color,p.type);el.appendChild(span)}
+    if(c===0){const rank=document.createElement('span');rank.className='rank';rank.textContent=8-r;el.appendChild(rank)}
+    if(r===7){const file=document.createElement('span');file.className='file';file.textContent=FILES[c];el.appendChild(file)}
+    el.addEventListener('click',()=>clickSquare(sq));boardEl.appendChild(el);
+  }
+}
+function renderMoves(){
+  const hist=chess.history();movesEl.innerHTML='';
+  if(!hist.length){movesEl.innerHTML='<div style="color:var(--muted);padding:6px">Няма ходове.</div>';return}
+  for(let i=0;i<hist.length;i+=2){const row=document.createElement('div');row.className='move-row';row.innerHTML='<span class="move-no">'+(i/2+1)+'.</span><span>'+(hist[i]||'')+'</span><span>'+(hist[i+1]||'')+'</span>';movesEl.appendChild(row)}
+  movesEl.scrollTop=movesEl.scrollHeight;
+}
+
+function showGameOverModal(){
+  if(!chess.game_over()) return;
+  const modal=$('gameoverModal'), title=$('gameoverTitle'), text=$('gameoverText'), icon=$('gameoverIcon');
+  let t='Game Over', msg='The game has ended.';
+  if(chess.in_checkmate()){
+    const winner=chess.turn()==='w'?'Black':'White';
+    t='Checkmate';
+    msg=winner+' wins by checkmate.';
+    icon.textContent=winner==='White'?'♕':'♛';
+  }else if(chess.in_stalemate()){t='Draw by Stalemate';msg='No legal moves are available.';icon.textContent='½–½';}
+  else if(chess.in_threefold_repetition()){t='Draw by Repetition';msg='The same position occurred three times.';icon.textContent='½–½';}
+  else if(chess.insufficient_material()){t='Draw';msg='There is not enough material to checkmate.';icon.textContent='½–½';}
+  else if(chess.in_draw()){t='Draw';msg='The game ended in a draw.';icon.textContent='½–½';}
+  title.textContent=t;text.textContent=msg;modal.classList.add('show');modal.setAttribute('aria-hidden','false');
+}
+function hideGameOverModal(){const m=$('gameoverModal');m.classList.remove('show');m.setAttribute('aria-hidden','true')}
+
+function updateClockDisplay(){
+  const f=t=>String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0');
+  $('topClock').textContent=f(blackTime);
+  $('bottomClock').textContent=f(whiteTime);
+}
+function startClock(){
+  if(clockTimer) clearInterval(clockTimer);
+  gameClockRunning=true;
+  clockTimer=setInterval(()=>{
+    if(!gameClockRunning||chess.game_over()){clearInterval(clockTimer);return;}
+    if(chess.turn()==='w') whiteTime=Math.max(0,whiteTime-1);
+    else blackTime=Math.max(0,blackTime-1);
+    updateClockDisplay();
+    if(whiteTime===0||blackTime===0){gameClockRunning=false;clearInterval(clockTimer);showToast('Time out');}
+  },1000);
+}
+
+function renderInfo(){
+  const turn=chess.turn()==='w'?'white':'Черни';
+  turnTextEl.textContent=chess.game_over()?'The party is over.':mode==='p2p'?(chess.turn()===myColor?'Your move':'Ход на противника'):(chess.turn()==='w'?'Your move':'The bot thinks…');
+  let s='';
+  if(chess.in_checkmate())s='♚ Checkmate! '+(chess.turn()==='w'?'Черните':'The Whites')+' they win.';
+  else if(chess.in_stalemate())s='Pat — draw.';
+  else if(chess.in_threefold_repetition())s='Tie — three-fold repetition.';
+  else if(chess.insufficient_material())s='Equality - insufficient material.';
+  else if(chess.in_draw())s='Equality.';
+  else if(chess.in_check())s='⚠️ check!';
+  else s=mode==='p2p'?(connected?'Game is active.':'Connect to an opponent.'):(mode==='local'?'Local 2P — Play on one screen.':'Play against a bot.');
+  gameStatusEl.textContent=s;
+  $('boardHint').textContent=mode==='bot'?'Bot mode':mode==='p2p'?'P2P 1v1':'Local 2P';
+  if(chess.game_over()){$('gameResult').textContent='Game over';showGameOverModal()}
+}
+
+function clickSquare(sq){
+  if(chess.game_over()||botThinking)return;
+  if(mode==='p2p'&&(!connected||chess.turn()!==myColor)){showToast(connected?'Wait for opponent turn':'Connect first');return}
+  if(mode==='bot'&&chess.turn()==='b'){return}
+  const p=chess.get(sq);
+  if(selected){
+    const legal=chess.moves({square:selected,verbose:true}), move=legal.find(m=>m.to===sq);
+    if(move){makePlayerMove({from:selected,to:sq,promotion:move.promotion||undefined});return}
+    if(p&&((mode==='p2p'&&p.color===myColor)||(mode!=='p2p'&&p.color==='w'))){selected=sq;renderBoard();return}
+    selected=null;renderBoard();return;
+  }
+  const allowed=mode==='p2p'?myColor:(mode==='bot'?'w':chess.turn());
+  if(p&&p.color===allowed){selected=sq;renderBoard()}
+}
+function makePlayerMove(payload){
+  if(payload.promotion){openPromotion(payload.from,payload.to);return}
+  applyMove(payload,true);
+}
+function openPromotion(from,to){
+  promotionResolve=(p)=>applyMove({from,to,promotion:p},true);
+  $('promotion').classList.add('show');
+}
+document.querySelectorAll('.promo').forEach(b=>b.addEventListener('click',()=>{const f=promotionResolve;promotionResolve=null;$('promotion').classList.remove('show');f(b.dataset.p)}));
+function applyMove(payload,sendIt){
+  const made=chess.move(payload);if(!made)return;
+  if(!gameClockRunning) startClock();
+  lastMove={from:payload.from,to:payload.to};selected=null;renderBoard();renderInfo();renderMoves();
+  if(sendIt&&mode==='p2p')send({type:'move',move:payload});
+  if(mode==='bot'&&chess.turn()==='b'&&!chess.game_over())setTimeout(botMove,250);
+}
+
+function evaluateBoard(){
+  const vals={p:100,n:320,b:335,r:510,q:950,k:20000};
+  const pst={
+    p:[0,5,5,-5,-5,5,10,0],
+    n:[-50,-20,0,5,5,0,-20,-50],
+    b:[-20,0,10,15,15,10,0,-20],
+    r:[0,5,5,10,10,5,5,0],
+    q:[-10,0,5,10,10,5,0,-10],
+    k:[20,30,10,0,0,10,30,20]
+  };
+  let s=0;
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const p=chess.board()[r][c];
+    if(p){
+      let v=vals[p.type];
+      let pos=pst[p.type][p.color==='w'?r:7-r]||0;
+      s+=(p.color==='b'?1:-1)*(v+pos);
+    }
+  }
+  if(chess.in_check()) s+=(chess.turn()==='b'?15:-15);
+  return s;
+}
+function minimax(depth, alpha, beta, maximizing){
+  if(depth===0||chess.game_over()) return evaluateBoard();
+
+  const moves=chess.moves({verbose:true});
+  if(maximizing){
+    let best=-Infinity;
+    for(const m of moves){
+      chess.move({from:m.from,to:m.to,promotion:m.promotion||'q'});
+      let score=minimax(depth-1,alpha,beta,false);
+      chess.undo();
+      best=Math.max(best,score);
+      alpha=Math.max(alpha,score);
+      if(beta<=alpha) break;
+    }
+    return best;
+  }else{
+    let best=Infinity;
+    for(const m of moves){
+      chess.move({from:m.from,to:m.to,promotion:m.promotion||'q'});
+      let score=minimax(depth-1,alpha,beta,true);
+      chess.undo();
+      best=Math.min(best,score);
+      beta=Math.min(beta,score);
+      if(beta<=alpha) break;
+    }
+    return best;
+  }
+}
+
+function botMove(){
+  if(mode!=='bot'||chess.turn()!=='b'||chess.game_over())return;
+  botThinking=true;
+  renderInfo();
+
+  const moves=chess.moves({verbose:true});
+  let chosen=moves[Math.floor(Math.random()*moves.length)];
+
+  // Level 1: still playable but now avoids obvious blunders
+  // Level 2: minimax depth 2
+  // Level 3: minimax depth 3 with capture priority
+  let depth=botLevel===1?1:(botLevel===2?2:3);
+  let best=-Infinity;
+
+  for(const m of moves){
+    chess.move({from:m.from,to:m.to,promotion:m.promotion||'q'});
+    let score=minimax(depth-1,-Infinity,Infinity,false);
+
+    // prefer winning captures and checkmate
+    if(m.captured) score+=40;
+    if(chess.in_checkmate()) score+=100000;
+
+    chess.undo();
+
+    if(score>best){
+      best=score;
+      chosen=m;
+    }
+  }
+
+  setTimeout(()=>{
+    applyMove({from:chosen.from,to:chosen.to,promotion:chosen.promotion||undefined},false);
+    botThinking=false;
+    renderInfo();
+  },350);
+}
+
+function startBot(level=1){
+  cleanup();mode='bot';botLevel=level;newBoard();$('topName').textContent='Stockfish-style Bot';$('bottomName').textContent=username||'You';$('topSub').textContent='Level '+level;$('bottomSub').textContent='White';$('topAvatar').textContent='🤖';showToast('Game against bot started');renderInfo()
+}
+function startLocal(){cleanup();mode='local';newBoard();$('topName').textContent='Player 2';$('bottomName').textContent='Player 1';$('topSub').textContent='Black';$('bottomSub').textContent='White';$('topAvatar').textContent='♚';showToast('Local 2P');renderInfo()}
+
+function setTab(tab){
+  $('playCard').style.display=tab==='play'?'block':'none';$('botCard').style.display=tab==='bot'||tab==='play'?'block':'none';$('p2pCard').style.display=tab==='p2p'?'block':'none';
+  document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));$('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active')
+}
+$('usernameSave').onclick=saveUsername;
+$('usernameInput').onkeydown=e=>{if(e.key==='Enter')saveUsername()};
+$('chatSend').onclick=sendChat; $('chatInput').onkeydown=e=>{if(e.key==='Enter')sendChat()};
+$('hostBtn').onclick=host;$('joinBtn').onclick=join;$('disconnectBtn').onclick=cleanup;
+$('newGameBtn').onclick=()=>mode==='p2p'?(connected&&(newBoard(),send({type:'newgame'}))):newBoard();
+$('flipBtn').onclick=()=>{flipped=!flipped;renderBoard()};
+$('resignBtn').onclick=()=>{if(mode==='p2p'&&connected)send({type:'resign'});gameStatusEl.textContent='Ти се отказа.';showToast('Resigned')};
+$('tabPlay').onclick=()=>setTab('play');$('tabP2P').onclick=()=>setTab('p2p');$('tabBot').onclick=()=>setTab('bot');
+$('modeBot').onclick=()=>startBot(botLevel);$('modeRandom').onclick=()=>setupUsername();
+setupUsername();
+$('usernameSave').onclick=saveUsername;
+$('usernameInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveUsername()});
+startBot(1);
+$('modeLocal').onclick=startLocal;
+$('modeP2P').onclick=()=>{mode='p2p';setTab('p2p');showToast('P2P mode')};
+document.querySelectorAll('[data-level]').forEach(b=>b.onclick=()=>{botLevel=Number(b.dataset.level);document.querySelectorAll('[data-level]').forEach(x=>x.classList.remove('active'));b.classList.add('active');startBot(botLevel)});
+$('joinCode').oninput=()=>joinCodeEl.value=joinCodeEl.value.replace(/\D/g,'').slice(0,4);
+
+
+document.querySelectorAll('[data-board-skin]').forEach(b=>b.onclick=()=>{boardSkin=b.dataset.boardSkin;document.querySelectorAll('[data-board-skin]').forEach(x=>x.classList.remove('active'));b.classList.add('active');applySkins()});
+document.querySelectorAll('[data-piece]').forEach(b=>b.onclick=()=>{pieceSkin=b.dataset.piece;document.querySelectorAll('[data-piece]').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderBoard()});
+
+$('gameoverNew').onclick=()=>{hideGameOverModal();newBoard();if(mode==='p2p'&&connected)send({type:'newgame'});};
+$('gameoverClose').onclick=hideGameOverModal;
+
+startBot(1);
+
+
+/* ===== Puzzle Mode added ===== */
+const puzzleData = Array.from({length:40},(_,i)=>({
+ level:i+1,
+ title:i<10?'Beginner':i<20?'Easy':i<30?'Medium':i<39?'Hard':'Master',
+ task:i%4===0?'Find the best move.':i%4===1?'Find checkmate.':i%4===2?'Win material.':'Defend your position.',
+ reward:10+i
+}));
+let currentPuzzle=null;
+let puzzleScore=0;
+let puzzleStreak=0;
+
+function openPuzzleMenu(){
+ const levels=puzzleData.map(p=>`<button class="btn secondary" onclick="startPuzzle(${p.level})">Level ${p.level}</button>`).join('');
+ let box=document.getElementById('puzzleBox');
+ if(!box){
+  box=document.createElement('div');box.id='puzzleBox';
+  box.style='position:fixed;inset:0;background:rgba(0,0,0,.75);display:grid;place-items:center;z-index:60;padding:20px';
+  document.body.appendChild(box);
+ }
+ box.innerHTML=`<div class="card" style="max-width:600px;width:100%;max-height:80vh;overflow:auto"><h2>Puzzle Levels</h2><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">${levels}</div></div>`;
+}
+function closePuzzleMenu(){const x=document.getElementById('puzzleBox');if(x)x.remove()}
+function startPuzzle(level){
+ closePuzzleMenu();
+ currentPuzzle=puzzleData[level-1];
+ newBoard();
+ $('boardHint').textContent=`🧩 Puzzle Level ${level}: ${currentPuzzle.task}`;
+ showToast(`Puzzle Level ${level} started`);
+ let panel=document.getElementById('puzzlePanel');
+ if(!panel){panel=document.createElement('div');panel.id='puzzlePanel';panel.className='card';document.querySelector('.side').prepend(panel);}
+ panel.innerHTML=`<h3>🧩 Puzzle Level ${level}</h3><p><b>${currentPuzzle.task}</b></p><p>Difficulty: ${currentPuzzle.title}<br>Reward: +${currentPuzzle.reward} XP<br>Score: ${puzzleScore}<br>🔥 Streak: ${puzzleStreak}</p><button class="btn secondary" onclick="puzzleHint()">💡 Hint</button> <button class="btn secondary" onclick="openPuzzleMenu()">Next Puzzle</button><button class="btn danger" onclick="exitPuzzle()">Exit Puzzle</button>`;
+}
+function puzzleHint(){showToast('💡 Look for checks, captures and strong moves.');}
+function exitPuzzle(){currentPuzzle=null;document.getElementById('puzzlePanel')?.remove();$('boardHint').textContent='Choose a mode on the right';newBoard();}
+
+const oldPuzzleButton=document.querySelector('.nav button:nth-child(2)');
+if(oldPuzzleButton) oldPuzzleButton.onclick=openPuzzleMenu;
+
+
+/* ===== Learn Mode added ===== */
+const learnLessons=[
+ ['Chess Basics','Learn the board, ranks, files and starting position.'],
+ ['Pawn Movement','The pawn moves forward one square and captures diagonally.'],
+ ['Knight Movement','The knight moves in an L shape and can jump over pieces.'],
+ ['Bishop Movement','The bishop moves diagonally across the board.'],
+ ['Rook Movement','The rook moves horizontally and vertically.'],
+ ['Queen Movement','The queen combines rook and bishop movement.'],
+ ['King Movement','The king moves one square in any direction.'],
+ ['Captures','Capture enemy pieces to gain an advantage.'],
+ ['Check & Checkmate','Attack the king and learn how to finish the game.'],
+ ['Castling','Protect your king with this special move.'],
+ ['Tactics','Learn forks, pins and winning combinations.'],
+ ['Endgames','Practice the final stage of chess games.']
+];
+let learnXP=0;
+function openLearn(){
+ let box=document.getElementById('learnBox');
+ if(!box){box=document.createElement('div');box.id='learnBox';box.style='position:fixed;inset:0;background:rgba(0,0,0,.75);display:grid;place-items:center;z-index:70;padding:20px';document.body.appendChild(box);}
+ box.innerHTML=`<div class="card" style="max-width:650px;width:100%;max-height:85vh;overflow:auto"><h2>📚 Learn Chess</h2><p>Choose a lesson and improve your skills.</p><div style="display:grid;gap:8px">${learnLessons.map((l,i)=>`<button class="btn secondary" onclick="startLesson(${i})">Lesson ${i+1}: ${l[0]}</button>`).join('')}</div></div>`;
+}
+function startLesson(i){
+ document.getElementById('learnBox')?.remove();
+ let panel=document.getElementById('learnPanel');
+ if(!panel){panel=document.createElement('div');panel.id='learnPanel';panel.className='card';document.querySelector('.side').prepend(panel);}
+ let l=learnLessons[i];
+ panel.innerHTML=`<h3>📚 Lesson ${i+1}: ${l[0]}</h3><p>${l[1]}</p><p><b>Your task:</b><br>Try the exercise and learn the idea.</p><button class="btn secondary" onclick="learnHint(${i})">💡 Hint</button><button class="btn primary" onclick="completeLesson(${i})">✅ Complete</button><p>XP: ${learnXP}</p>`;
+}
+function learnHint(i){showToast('💡 Practice this concept and look at the highlighted moves.');}
+function completeLesson(i){learnXP+=10;showToast('✅ Lesson completed! +10 XP');startLesson(i);}
+const oldLearnButton=document.querySelector('.nav button:nth-child(3)');
+if(oldLearnButton) oldLearnButton.onclick=openLearn;
+
+</script>
+</body>
+
+</html>
