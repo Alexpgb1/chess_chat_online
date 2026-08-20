@@ -1,11 +1,17 @@
 <!DOCTYPE html>
-<html lang="bg">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BlockHub Chess Arena</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script>
+// ===== Redesign animations =====
+let dashGames=Number(localStorage.getItem('dashGames')||0);
+const dashGamesEl=document.getElementById('dashGames');
+if(dashGamesEl) dashGamesEl.textContent=dashGames;
+</script>
 
 <style>
 :root{
@@ -32,8 +38,6 @@ button{cursor:pointer}
 .board-wrap{display:flex;justify-content:center}.board{width:min(72vh,720px,78vw);height:min(72vh,720px,78vw);aspect-ratio:1/1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));border-radius:5px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.45)}
 .square{position:relative;width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;aspect-ratio:1/1}.light{background:var(--light)}.dark{background:var(--dark)}
 .square.selected{box-shadow:inset 0 0 0 4px #f6d35f}.square.last{background:#c8b458}.square.check{box-shadow:inset 0 0 0 999px rgba(215,55,55,.45)}.square.legal::after{content:"";width:18%;height:18%;border-radius:50%;background:rgba(25,30,35,.35);position:absolute}.square.capture::after{content:"";position:absolute;inset:6%;border:5px solid rgba(45,45,45,.42);border-radius:50%}
-.square.king-check{animation:kingCheckPulse 1s ease-in-out infinite}
-@keyframes kingCheckPulse{0%,100%{box-shadow:inset 0 0 0 4px rgba(224,91,91,.95);background-color:rgba(224,91,91,.1)}50%{box-shadow:inset 0 0 0 4px rgba(224,91,91,.25);background-color:rgba(224,91,91,.35)}}
 .piece{font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;font-size:clamp(38px,6.1vw,74px);line-height:1;position:relative;z-index:2;transform:translateY(-1px);filter:drop-shadow(0 3px 2px rgba(0,0,0,.28));font-weight:500}
 .piece{transition:transform .22s ease,opacity .22s ease}.piece.dragging{opacity:.65;transform:scale(1.12)}.square.drag-over{outline:4px solid rgba(246,211,95,.8);outline-offset:-4px}.white-piece{color:#f8f8f8;text-shadow:0 1px 0 #fff,0 3px 2px rgba(0,0,0,.48),0 0 1px #222}.black-piece{color:#252525;text-shadow:0 1px 0 rgba(255,255,255,.55),0 3px 2px rgba(0,0,0,.55),0 0 1px #000}
 
@@ -73,7 +77,7 @@ button{cursor:pointer}
 .rank,.file{position:absolute;font-size:11px;font-weight:900;z-index:3;opacity:.75}.rank{left:5px;top:4px}.file{right:5px;bottom:4px}.light .rank,.light .file{color:#65707b}.dark .rank,.dark .file{color:#e8edf2}
 .board-bottom{display:flex;justify-content:space-between;align-items:center;padding:12px 5px 2px;color:var(--muted);font-size:12px}
 .side{display:grid;gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}.card h3{margin:0 0 12px;font-size:15px}
-.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;background:#0e141b;border-radius:9px;padding:3px;gap:3px}.tabs button{border:0;background:transparent;color:var(--muted);padding:9px 5px;border-radius:7px;font-weight:800;font-size:12px}.tabs button.active{background:#263442;color:#fff}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:#0e141b;border-radius:9px;padding:3px;gap:3px}.tabs button{border:0;background:transparent;color:var(--muted);padding:9px 5px;border-radius:7px;font-weight:800;font-size:12px}.tabs button.active{background:#263442;color:#fff}
 .mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mode{background:#18222d;border:1px solid var(--line);border-radius:10px;padding:11px;color:#dbe2e9;text-align:left}.mode:hover,.mode.active{border-color:var(--green);background:#1d2a21}.mode b{display:block}.mode span{display:block;color:var(--muted);font-size:11px;margin-top:3px}
 .p2p-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.field{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#0e141b;color:#fff;text-align:center;letter-spacing:4px;font-weight:900}.btn{border:0;border-radius:8px;padding:10px 12px;font-weight:800}.btn.primary{background:var(--green);color:#10200b}.btn.secondary{background:#25323e;color:#fff}.btn.danger{background:#4a2225;color:#ffb0b0}.btn.full{width:100%}
 .room-code{font-size:21px;letter-spacing:6px;text-align:center;background:#0d141b;border:1px dashed #51616f;padding:9px;border-radius:8px;color:#f4d35e;font-weight:900;margin:9px 0}
@@ -110,6 +114,33 @@ button{cursor:pointer}
 .username-modal.show{display:grid}
 .username-card{background:#151d26;border:1px solid #334352;border-radius:16px;padding:25px;width:min(360px,90vw);text-align:center}
 .username-card input{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line);background:#0e141b;color:white;margin:15px 0}
+
+/* ===== BlockHub Redesign Layer ===== */
+body{background:radial-gradient(circle at top,#263b55,#080c12 55%);}
+.app{transition:.35s ease}
+.sidebar{background:linear-gradient(180deg,#111b28,#090d13);backdrop-filter:blur(10px)}
+.card,.board-card,.sidebar-card{box-shadow:0 15px 45px rgba(0,0,0,.28);transition:.25s ease}
+.card:hover,.board-card:hover{transform:translateY(-2px)}
+.btn,.mode,.skin-btn{transition:.2s ease;position:relative;overflow:hidden}
+.btn:hover,.mode:hover,.skin-btn:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.profile-dashboard{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.profile-card{background:linear-gradient(135deg,#182636,#101720);border:1px solid #314353;border-radius:16px;padding:16px}
+.profile-card b{font-size:24px;display:block;margin-top:6px}
+.profile-card span{color:#9aa8b7;font-size:12px}
+.home-hero{background:linear-gradient(135deg,#182b3d,#111820);border:1px solid #344757;border-radius:20px;padding:25px;margin-bottom:20px;display:none}
+.home-hero h2{font-size:32px;margin:0 0 8px}
+.home-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.capture-pop{animation:capturePop .35s ease}
+@keyframes capturePop{0%{transform:scale(1);opacity:1}50%{transform:scale(1.25);filter:brightness(1.8)}100%{transform:scale(.8);opacity:0}}
+.square.king-check{animation:kingRedGlow 1.2s ease-in-out infinite}
+@keyframes kingRedGlow{0%,100%{box-shadow:0 0 0 0 rgba(255,40,40,0)}50%{box-shadow:0 0 22px 8px rgba(255,40,40,.85);background-color:rgba(255,40,40,.25)}}
+.victory-effect{animation:victoryShow .8s ease}
+@keyframes victoryShow{from{opacity:0;transform:scale(.8) translateY(30px)}to{opacity:1;transform:none}}
+@media(max-width:900px){.profile-dashboard{grid-template-columns:repeat(2,1fr)}}
+
+/* ===== Home dashboard polish ===== */
+.home-card,.profile-dashboard .card{animation:fadeUp .45s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
 </style>
 
 </head>
@@ -119,15 +150,31 @@ button{cursor:pointer}
   <aside class="sidebar">
     <div class="brand"><div class="brand-icon">♟</div><div><strong>BlockHub</strong><small>Chess Arena</small></div></div>
     <div class="nav">
-      <button class="active">♟ Play</button>
-      <button onclick="showToast('Puzzle mode coming soon')">◆ Puzzles</button>
-      <button onclick="showToast('Learn mode coming soon')">▣ Learn</button>
-      <button onclick="showToast('Watch mode coming soon')">▶ Watch</button>
+      <button class="active" id="navPlay" aria-label="Play">♟ Play</button>
+      <button id="navPuzzles" aria-label="Puzzles">◆ Puzzles</button>
+      <button id="navLearn" aria-label="Learn">▣ Learn</button>
+      <button id="navWatch" aria-label="Watch">▶ Watch</button>
     </div>
     <div class="sidebar-card"><b>Play your way</b><p>Play with a friend using P2P, against a bot, or practice locally.</p></div>
   </aside>
 
-  <main class="main">
+  <main class="main"><div class="home-hero" id="homeHero">
+<h2>♟ Welcome to BlockHub Chess Arena</h2>
+<p>Train, play online and improve your chess skills.</p>
+<div class="home-actions">
+<button class="btn primary" onclick="document.querySelector('.board-card').scrollIntoView({behavior:'smooth'})">Play Chess</button>
+<button class="btn secondary" onclick="openPuzzleMenu()">🧩 Puzzle of the Day</button>
+<button class="btn secondary" onclick="document.getElementById('learn')?.scrollIntoView({behavior:'smooth'})">📚 Learn Chess</button>
+<button class="btn secondary" onclick="document.getElementById('navWatch').click()">▶ Watch Games</button>
+</div>
+</div>
+<div class="profile-dashboard">
+<div class="profile-card"><span>Rating</span><b id="dashRating">1200</b></div>
+<div class="profile-card"><span>Games</span><b id="dashGames">0</b></div>
+<div class="profile-card"><span>Wins</span><b id="dashWins">0</b></div>
+<div class="profile-card"><span>Streak</span><b id="dashStreak">🔥 0</b></div>
+</div>
+
     <div class="topbar">
       <div><h1>Chess Arena</h1><p>Fast chess game with a modern interface</p></div>
       <div class="connection-pill"><span class="dot" id="connectionDot"></span><span id="connectionPill">Offline</span></div>
@@ -153,7 +200,7 @@ button{cursor:pointer}
       <aside class="side">
         <div class="card">
           <div class="tabs">
-            <button class="active" id="tabPlay">Play</button><button id="tabP2P">P2P</button><button id="tabBot">Bots</button>
+            <button class="active" id="tabPlay">Play</button><button id="tabP2P">P2P</button><button id="tabBot">Bots</button><button id="tabWatch">Watch</button>
           </div>
         </div>
 
@@ -178,7 +225,7 @@ button{cursor:pointer}
 
         <div class="card" id="p2pCard" style="display:none">
           <h3>Online P2P</h3>
-          <button class="btn primary full" id="hostBtn">Create 4-digit code</button>
+          <button class="btn primary full" id="hostBtn" aria-label="Create a 4-digit room code">Create 4-digit code</button>
           <div class="room-code" id="roomCode">----</div>
           <div class="p2p-row">
             <input class="field" id="joinCode" maxlength="4" inputmode="numeric" placeholder="4 digits">
@@ -193,6 +240,17 @@ button{cursor:pointer}
              </div>
            </div>
            <div class="status" id="p2pStatus">P2P: Not connected</div>
+        </div>
+
+        <div class="card" id="watchCard" style="display:none">
+          <h3>👀 Watch a game</h3>
+          <p style="font-size:12px;color:var(--muted);margin:0 0 10px">Enter the 4-digit room code of a live P2P game to spectate it — no server needed, just a direct connection.</p>
+          <div class="p2p-row">
+            <input class="field" id="watchCode" maxlength="4" inputmode="numeric" placeholder="4 digits">
+            <button class="btn secondary" id="watchBtn">Watch</button>
+          </div>
+          <div style="margin-top:8px"><button class="btn danger full" id="stopWatchBtn">Stop watching</button></div>
+          <div class="status" id="watchStatus">Watch: not connected</div>
         </div>
 
         <div class="card">
@@ -226,7 +284,7 @@ button{cursor:pointer}
 
 <div class="card">
           <h3>Moves</h3>
-          <div class="moves" id="moves"><div style="color:var(--muted);padding:6px">Няма ходове.</div></div>
+          <div class="moves" id="moves"><div style="color:var(--muted);padding:6px">No moves yet.</div></div>
         </div>
 
         <div class="card actions">
@@ -275,12 +333,13 @@ const FILES=['a','b','c','d','e','f','g','h'];
 let chess=new Chess(), selected=null, lastMove=null, peer=null, conn=null, roomId=null, myColor=null;
 let whiteTime=600, blackTime=600, clockTimer=null, gameClockRunning=false;
 let connected=false, isHost=false, mode='bot', botLevel=1, flipped=false, botThinking=false, promotionResolve=null;
+let spectatorConns=[];
 let username=localStorage.getItem('chess_username')||'';
 let opponentUsername='Opponent';
 
 const $=id=>document.getElementById(id);
 
-/* ===== Sound Engine (Web Audio API — синтезирани звуци, без файлове) ===== */
+/* ===== Sound Engine (Web Audio API — synthesized sounds, no audio files) ===== */
 const SoundFX=(()=>{
   let ctx=null;
   let enabled=(localStorage.getItem('chess_sound')!=='off');
@@ -289,7 +348,7 @@ const SoundFX=(()=>{
     if(ctx&&ctx.state==='suspended'){ ctx.resume().catch(()=>{}); }
     return ctx;
   }
-  // Проста нота с ADSR плик, тип осцилатор и лек нискочестотен филтър за мекота
+  // A simple note with an ADSR envelope, oscillator type, and a gentle low-pass filter for softness
   function tone(freq,start,dur,{type='sine',gain=.22,glideTo=null,filter=null}={}){
     const c=getCtx(); if(!c||!enabled)return;
     const t0=c.currentTime+start;
@@ -319,26 +378,26 @@ const SoundFX=(()=>{
   return{
     setEnabled(v){enabled=v;localStorage.setItem('chess_sound',v?'on':'off');},
     isEnabled(){return enabled;},
-    move(){ // 🔊 плавен, мек звук при обикновено местене
+    move(){ // 🔊 smooth, soft sound for a regular move
       tone(300,0,.085,{type:'sine',gain:.16,glideTo:230,filter:{type:'lowpass',freq:1500}});
     },
-    capture(){ // ⚔️ по-остър, различим звук при вземане на пешка/фигура
+    capture(){ // ⚔️ sharper, distinct sound when capturing a pawn/piece
       tone(190,0,.09,{type:'square',gain:.10,glideTo:110,filter:{type:'lowpass',freq:1200}});
       noiseBurst(0,.06,{gain:.22,filterFreq:900});
     },
-    check(){ // 👑 отчетлив предупредителен звук при шах
+    check(){ // 👑 clear warning sound on check
       tone(660,0,.11,{type:'triangle',gain:.20});
       tone(880,.09,.16,{type:'triangle',gain:.18});
     },
-    checkmate(){ // 🏆 по-богат, тържествен/финален звук при мат
+    checkmate(){ // 🏆 richer, triumphant/final sound on checkmate
       const notes=[523.25,659.25,783.99,1046.5];
       notes.forEach((f,i)=>tone(f,i*.11,.28,{type:'triangle',gain:.22,filter:{type:'lowpass',freq:3000}}));
       tone(261.6,.02,.5,{type:'sine',gain:.12});
     },
-    lowTime(){ // ⏱️ кратко, настойчиво предупреждение при малко останало време
+    lowTime(){ // ⏱️ short, urgent warning when time is running low
       tone(1000,0,.07,{type:'square',gain:.14});
     },
-    click(){ // 🎮 лек UI звук при клик
+    click(){ // 🎮 light UI click sound
       tone(700,0,.035,{type:'sine',gain:.07,filter:{type:'highpass',freq:300}});
     },
     gameStart(){
@@ -347,13 +406,13 @@ const SoundFX=(()=>{
     }
   };
 })();
-// Отключваме AudioContext при първо потребителско взаимодействие (изисквано от браузърите)
+// Unlock the AudioContext on the first user interaction (required by browsers)
 ['click','touchstart','keydown'].forEach(evt=>document.addEventListener(evt,()=>{
   try{ if(SoundFX && typeof SoundFX.isEnabled==='function'){} }catch(e){}
 },{once:true,passive:true}));
-// 🎮 Универсален UI click звук за всички бутони/интерактивни контроли
+// 🎮 Universal UI click sound for all buttons/interactive controls
 document.addEventListener('click',e=>{
-  const t=e.target.closest('button,.mode,.skin-btn,.room-join,.tabs button');
+  const t=e.target.closest('button,.mode,.skin-btn,.tabs button');
   if(t) SoundFX.click();
 },true);
 
@@ -409,91 +468,10 @@ function addChat(text,me=false,name=''){const box=$('chatMessages');if(!box)retu
 function sendChat(){const input=$('chatInput');const text=input.value.trim();if(!text)return;addChat(text,true,username||'Player');send({type:'chat',text,name:username});input.value='';}
 
 
-let roomRefreshBusy=false;
-
-function renderRoomList(peers){
-  const list=$('roomList'), count=$('roomCount');
-  list.innerHTML='';
-  const rooms=(peers||[])
-    .map(String)
-    .map(id=>({id,code:(id.match(/^blockhub-chess-(\d{4})$/)||[])[1]}))
-    .filter(x=>x.code)
-    .slice(0,20);
-
-  count.textContent='('+rooms.length+')';
-
-  if(!rooms.length){
-    list.innerHTML='<div class="room-empty">No available rooms found.</div>';
-    return;
-  }
-
-  rooms.forEach((room,i)=>{
-    const row=document.createElement('div');
-    row.className='room-item';
-    row.innerHTML=
-      '<div class="room-player">♟ Player '+(i+1)+'</div>'+
-      '<div class="room-code-mini">'+room.code+'</div>'+
-      '<button class="room-join" data-room="'+room.code+'">JOIN</button>';
-    row.querySelector('.room-join').onclick=()=>joinRoomCode(room.code);
-    list.appendChild(row);
-  });
-}
-
-function refreshRooms(){
-  if(roomRefreshBusy)return;
-  roomRefreshBusy=true;
-  const btn=$('refreshRoomsBtn');
-  btn.disabled=true;
-  btn.textContent='Searching…';
-
-  if(!window.Peer){
-    renderRoomList([]);
-    btn.disabled=false;btn.textContent='↻ Refresh';roomRefreshBusy=false;
-    return;
-  }
-
-  // PeerJS exposes listAllPeers only when the signaling server has discovery enabled.
-  // We use the public PeerJS service already used by this file; no local server is needed.
-  const probe=new Peer();
-  let finished=false;
-
-  const finish=(peers)=>{
-    if(finished)return;
-    finished=true;
-    try{probe.destroy()}catch(e){}
-    renderRoomList(peers||[]);
-    btn.disabled=false;btn.textContent='↻ Refresh';roomRefreshBusy=false;
-  };
-
-  const timer=setTimeout(()=>finish([]),7000);
-
-  probe.on('open',()=>{
-    if(typeof probe.listAllPeers!=='function'){
-      clearTimeout(timer);finish([]);return;
-    }
-    try{
-      probe.listAllPeers(peers=>{
-        clearTimeout(timer);finish(peers);
-      });
-    }catch(e){
-      clearTimeout(timer);console.error(e);finish([]);
-    }
-  });
-
-  probe.on('error',e=>{
-    clearTimeout(timer);
-    console.warn('Room discovery unavailable:',e);
-    finish([]);
-  });
-}
-
-function joinRoomCode(code){
-  joinCodeEl.value=code;
-  join();
-}
-
 function cleanup(){
   if(conn){try{conn.close()}catch(e){} conn=null}
+  spectatorConns.forEach(c=>{try{c.close()}catch(e){}});
+  spectatorConns=[];
   if(peer){try{peer.destroy()}catch(e){} peer=null}
   connected=false; myColor=null; roomId=null; isHost=false;
   roomCodeEl.textContent='----'; setStatus('not connected');
@@ -502,7 +480,7 @@ function cleanup(){
 function newBoard(){
   hideGameOverModal();
   chess=new Chess();selected=null;lastMove=null;botThinking=false;
-  // 🔄 нулиране на часовника и ефектите при New Game
+  // 🔄 reset the clock and effects on New Game
   if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
   gameClockRunning=false;
   whiteTime=600;blackTime=600;
@@ -510,7 +488,31 @@ function newBoard(){
   renderBoard();renderInfo();renderMoves();
   SoundFX.gameStart();
 }
-function setOnlineUI(ok){$('connectionDot').classList.toggle('ok',ok);$('connectionPill').textContent=ok?'P2P Connected':'Offline'}
+function setOnlineUI(ok){$('connectionDot').classList.toggle('ok',ok);$('connectionPill').textContent=ok?(mode==='watch'?'Watching':'P2P Connected'):'Offline'}
+
+function spectatorSyncPayload(){
+  return{
+    type:'start',
+    fen:chess.fen(),
+    history:chess.history(),
+    whiteTime,blackTime,
+    whiteName:myColor==='w'?(username||'Player'):(opponentUsername||'Player'),
+    blackName:myColor==='b'?(username||'Player'):(opponentUsername||'Player')
+  };
+}
+function broadcastToSpectators(msg){
+  spectatorConns.forEach(c=>{ if(c&&c.open){ try{c.send(msg)}catch(e){} } });
+}
+function syncAllSpectators(){ broadcastToSpectators(spectatorSyncPayload()); }
+function setupSpectatorConn(c){
+  c.on('open',()=>{
+    spectatorConns.push(c);
+    try{c.send(spectatorSyncPayload())}catch(e){}
+    showToast('A spectator joined');
+  });
+  c.on('close',()=>{spectatorConns=spectatorConns.filter(x=>x!==c);});
+  c.on('error',()=>{spectatorConns=spectatorConns.filter(x=>x!==c);});
+}
 
 function setupConn(c,color,host){
   conn=c;myColor=color;isHost=host;
@@ -519,18 +521,22 @@ function setupConn(c,color,host){
     $('bottomName').textContent=color==='w'?username+' — White':opponentUsername+' — White';
     $('topName').textContent=color==='b'?username+' — Black':opponentUsername+' — Black';
     send({type:'username',name:username});
-     if(isHost){newBoard();send({type:'start',fen:chess.fen(),history:chess.history()})} else send({type:'ready'});
+     if(isHost){newBoard();send({type:'start',fen:chess.fen(),history:chess.history()});syncAllSpectators();} else send({type:'ready'});
     renderInfo();
   });
   conn.on('data',handleData);
-  conn.on('close',()=>{connected=false;setOnlineUI(false);setStatus('the connection is broken','err');gameStatusEl.textContent='The opponent left the party.'});
+  conn.on('close',()=>{connected=false;setOnlineUI(false);setStatus('the connection is broken','err');gameStatusEl.textContent='The opponent left the party.';if(isHost)broadcastToSpectators({type:'opponentLeft'});});
   conn.on('error',e=>{console.error(e);setStatus('connection error','err')});
 }
 function host(){
   cleanup(); mode='p2p'; roomId=randomCode(); roomCodeEl.textContent=roomId; isHost=true; myColor='w'; setStatus('creating a room...');
   peer=new Peer('blockhub-chess-'+roomId);
-  peer.on('open',()=>{setStatus('waiting for opponent…','ok');setOnlineUI(false);showToast('Code ready: '+roomId);setTimeout(refreshRooms,250)});
-  peer.on('connection',c=>setupConn(c,'w',true));
+  peer.on('open',()=>{setStatus('waiting for opponent…','ok');setOnlineUI(false);showToast('Code ready: '+roomId)});
+  peer.on('connection',c=>{
+    if(c.metadata&&c.metadata.role==='spectator'){setupSpectatorConn(c);}
+    else if(conn&&connected){try{c.close()}catch(e){}}
+    else{setupConn(c,'w',true);}
+  });
   peer.on('error',e=>{console.error(e);setStatus(e.type==='unavailable-id'?'code is busy — create a new code':'error: '+e.type,'err')});
 }
 function join(){
@@ -539,18 +545,62 @@ function join(){
   cleanup();mode='p2p';roomId=code;roomCodeEl.textContent=code;myColor='b';setStatus('connecting…');
   peer=new Peer();
   peer.on('open',()=>setupConn(peer.connect('blockhub-chess-'+code,{reliable:true}),'b',false));
-  peer.on('error',e=>{console.error(e);setStatus('неуспешно свързване: '+e.type,'err')});
+  peer.on('error',e=>{console.error(e);setStatus('connection failed: '+e.type,'err')});
+}
+function setWatchStatus(t,type=''){$('watchStatus').textContent='Watch: '+t;$('watchStatus').className='status '+type}
+function watchRoom(){
+  const code=$('watchCode').value.trim();
+  if(!/^\d{4}$/.test(code)){setWatchStatus('enter exactly 4 digits','err');return}
+  cleanup();mode='watch';roomId=code;setWatchStatus('connecting…');
+  if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
+  gameClockRunning=false;
+  peer=new Peer();
+  peer.on('open',()=>{
+    conn=peer.connect('blockhub-chess-'+code,{reliable:true,metadata:{role:'spectator'}});
+    conn.on('open',()=>{
+      connected=true;setWatchStatus('connected — watching live','ok');setOnlineUI(true);
+      $('boardHint').textContent='Watching room '+code;
+      showToast('Watching room '+code);
+    });
+    conn.on('data',handleSpectatorData);
+    conn.on('close',()=>{connected=false;setOnlineUI(false);setWatchStatus('the game ended or the host left','err');});
+    conn.on('error',e=>{console.error(e);setWatchStatus('connection error','err')});
+  });
+  peer.on('error',e=>{console.error(e);setWatchStatus('connection failed: '+e.type,'err')});
+}
+function handleSpectatorData(data){
+  if(!data||typeof data!=='object')return;
+  if(data.type==='start'){
+    chess=new Chess(data.fen);selected=null;lastMove=null;
+    whiteTime=typeof data.whiteTime==='number'?data.whiteTime:600;
+    blackTime=typeof data.blackTime==='number'?data.blackTime:600;
+    if(data.whiteName)$('bottomName').textContent=data.whiteName+' — White';
+    if(data.blackName)$('topName').textContent=data.blackName+' — Black';
+    updateClockDisplay();renderBoard();renderInfo();renderMoves();
+  }else if(data.type==='move'){
+    try{
+      const m=chess.move(data.move);if(!m)return;
+      lastMove={from:data.move.from,to:data.move.to};selected=null;
+      if(typeof data.whiteTime==='number')whiteTime=data.whiteTime;
+      if(typeof data.blackTime==='number')blackTime=data.blackTime;
+      updateClockDisplay();renderBoard();renderInfo();renderMoves();playMoveResultSound(m);
+    }catch(e){console.error(e)}
+  }else if(data.type==='resign'){
+    gameStatusEl.textContent='A player resigned.';showToast('A player resigned');
+  }else if(data.type==='opponentLeft'){
+    gameStatusEl.textContent='A player left the game.';showToast('A player left the game');
+  }
 }
 function handleData(data){
   if(!data||typeof data!=='object')return;
-  if(data.type==='username'){opponentUsername=data.name||'Opponent';updatePlayerNames();return;}
+  if(data.type==='username'){opponentUsername=data.name||'Opponent';updatePlayerNames();if(isHost)syncAllSpectators();return;}
   if(data.type==='chat'){addChat(data.text,false,data.name||opponentUsername);}
   else if(data.type==='start'){chess=new Chess(data.fen);selected=null;lastMove=null;renderBoard();renderInfo();renderMoves()}
   else if(data.type==='ready'&&isHost)send({type:'start',fen:chess.fen(),history:chess.history()});
   else if(data.type==='move'){
-    try{const m=chess.move(data.move);if(!m)return;if(!gameClockRunning)startClock();lastMove={from:data.move.from,to:data.move.to};selected=null;renderBoard();renderInfo();renderMoves();playMoveResultSound(m)}catch(e){console.error(e)}
-  } else if(data.type==='newgame'){newBoard()}
-  else if(data.type==='resign'){gameStatusEl.textContent='The opponent has given up. You win!';$('gameResult').textContent='1–0 / 0–1'}
+    try{const m=chess.move(data.move);if(!m)return;if(!gameClockRunning)startClock();lastMove={from:data.move.from,to:data.move.to};selected=null;renderBoard();renderInfo();renderMoves();playMoveResultSound(m);if(isHost)broadcastToSpectators({type:'move',move:data.move,whiteTime,blackTime});}catch(e){console.error(e)}
+  } else if(data.type==='newgame'){newBoard();if(isHost)syncAllSpectators();}
+  else if(data.type==='resign'){gameStatusEl.textContent='The opponent has given up. You win!';$('gameResult').textContent='1–0 / 0–1';if(isHost)broadcastToSpectators({type:'resign'});}
 }
 
 function squareName(row,col){return FILES[col]+(8-row)}
@@ -576,11 +626,13 @@ function renderBoard(){
     if(kingCheckSq&&sq===kingCheckSq)el.classList.add('king-check');
     const lm=legal.find(m=>m.to===sq);if(lm)el.classList.add(chess.get(sq)?'capture':'legal');
     const p=chess.get(sq);
+    const allowedDragColor=mode==='p2p'?myColor:(mode==='bot'?'w':chess.turn());
     if(p){
       const span=document.createElement('span');
       span.className='piece '+(p.color==='w'?'white-piece':'black-piece')+(pieceSkin==='real3d'?' piece-3d':'');
       span.textContent=pieceIcon(p.color,p.type);
-      span.draggable=true;
+      const canDrag=mode!=='watch'&&p.color===allowedDragColor&&chess.turn()===p.color&&(mode!=='p2p'||connected);
+      span.draggable=canDrag;
       span.addEventListener('dragstart',()=>{dragFrom=sq;span.classList.add('dragging')});
       span.addEventListener('dragend',()=>{span.classList.remove('dragging');dragFrom=null});
       el.appendChild(span);
@@ -589,19 +641,30 @@ function renderBoard(){
     el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
     el.addEventListener('drop',e=>{
       e.preventDefault();el.classList.remove('drag-over');
+      if(mode==='watch')return;
+      if(chess.game_over()||botThinking)return;
+      if(mode==='p2p'&&(!connected||chess.turn()!==myColor)){dragFrom=null;return;}
+      if(mode==='bot'&&chess.turn()==='b')return;
       if(dragFrom && dragFrom!==sq){
+        const dragPiece=chess.get(dragFrom);
+        const ownerAllowed=mode==='p2p'?myColor:(mode==='bot'?'w':chess.turn());
+        if(!dragPiece||dragPiece.color!==ownerAllowed){dragFrom=null;return;}
         const moves=chess.moves({square:dragFrom,verbose:true});
         const move=moves.find(m=>m.to===sq);
         if(move) makePlayerMove({from:dragFrom,to:sq,promotion:move.promotion||undefined});
       }
     });
+    el.tabIndex=0;
+    el.setAttribute('role','button');
+    el.setAttribute('aria-label','Square '+sq+(p?', '+(p.color==='w'?'white':'black')+' '+p.type:', empty'));
     el.addEventListener('click',()=>clickSquare(sq));
+    el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();clickSquare(sq);}});
     boardEl.appendChild(el);
   }
 }
 function renderMoves(){
   const hist=chess.history();movesEl.innerHTML='';
-  if(!hist.length){movesEl.innerHTML='<div style="color:var(--muted);padding:6px">Няма ходове.</div>';return}
+  if(!hist.length){movesEl.innerHTML='<div style="color:var(--muted);padding:6px">No moves yet.</div>';return}
   for(let i=0;i<hist.length;i+=2){const row=document.createElement('div');row.className='move-row';row.innerHTML='<span class="move-no">'+(i/2+1)+'.</span><span>'+(hist[i]||'')+'</span><span>'+(hist[i+1]||'')+'</span>';movesEl.appendChild(row)}
   movesEl.scrollTop=movesEl.scrollHeight;
 }
@@ -628,7 +691,7 @@ function updateClockDisplay(){
   $('topClock').textContent=f(blackTime);
   $('bottomClock').textContent=f(whiteTime);
 }
-const LOW_TIME_THRESHOLD=10; // секунди, под които звучи предупреждението
+const LOW_TIME_THRESHOLD=10; // seconds, below which the low-time warning sound plays
 function startClock(){
   if(clockTimer) clearInterval(clockTimer);
   gameClockRunning=true;
@@ -638,28 +701,29 @@ function startClock(){
     else blackTime=Math.max(0,blackTime-1);
     updateClockDisplay();
     const activeTime=chess.turn()==='w'?whiteTime:blackTime;
-    if(activeTime>0&&activeTime<=LOW_TIME_THRESHOLD) SoundFX.lowTime(); // ⏱️ звуково предупреждение при малко време
+    if(activeTime>0&&activeTime<=LOW_TIME_THRESHOLD) SoundFX.lowTime(); // ⏱️ audio warning when time is low
     if(whiteTime===0||blackTime===0){gameClockRunning=false;clearInterval(clockTimer);showToast('Time out');}
   },1000);
 }
 
 function renderInfo(){
-  const turn=chess.turn()==='w'?'white':'Черни';
-  turnTextEl.textContent=chess.game_over()?'The party is over.':mode==='p2p'?(chess.turn()===myColor?'Your move':'Ход на противника'):(chess.turn()==='w'?'Your move':'The bot thinks…');
+  turnTextEl.textContent=chess.game_over()?'The game is over.':mode==='p2p'?(chess.turn()===myColor?'Your move':"Opponent's move"):mode==='watch'?(chess.turn()==='w'?"White's move":"Black's move"):(chess.turn()==='w'?'Your move':'The bot thinks…');
   let s='';
-  if(chess.in_checkmate())s='♚ Checkmate! '+(chess.turn()==='w'?'Черните':'The Whites')+' they win.';
+  if(chess.in_checkmate())s='♚ Checkmate! '+(chess.turn()==='w'?'Black':'White')+' wins.';
   else if(chess.in_stalemate())s='Pat — draw.';
   else if(chess.in_threefold_repetition())s='Tie — three-fold repetition.';
   else if(chess.insufficient_material())s='Equality - insufficient material.';
   else if(chess.in_draw())s='Equality.';
   else if(chess.in_check())s='⚠️ check!';
+  else if(mode==='watch')s=connected?'Watching live.':'Enter a room code to watch.';
   else s=mode==='p2p'?(connected?'Game is active.':'Connect to an opponent.'):(mode==='local'?'Local 2P — Play on one screen.':'Play against a bot.');
   gameStatusEl.textContent=s;
-  $('boardHint').textContent=mode==='bot'?'Bot mode':mode==='p2p'?'P2P 1v1':'Local 2P';
+  $('boardHint').textContent=mode==='bot'?'Bot mode':mode==='p2p'?'P2P 1v1':mode==='watch'?'Watching':'Local 2P';
   if(chess.game_over()){$('gameResult').textContent='Game over';showGameOverModal()}
 }
 
 function clickSquare(sq){
+  if(mode==='watch')return;
   if(chess.game_over()||botThinking)return;
   if(mode==='p2p'&&(!connected||chess.turn()!==myColor)){showToast(connected?'Wait for opponent turn':'Connect first');return}
   if(mode==='bot'&&chess.turn()==='b'){return}
@@ -695,6 +759,7 @@ function applyMove(payload,sendIt){
   lastMove={from:payload.from,to:payload.to};selected=null;renderBoard();renderInfo();renderMoves();
   playMoveResultSound(made);
   if(sendIt&&mode==='p2p')send({type:'move',move:payload});
+  if(isHost)broadcastToSpectators({type:'move',move:payload,whiteTime,blackTime});
   if(mode==='bot'&&chess.turn()==='b'&&!chess.game_over())setTimeout(botMove,250);
 }
 
@@ -761,22 +826,23 @@ function botMove(){
   // Level 2: minimax depth 2
   // Level 3: minimax depth 3 with capture priority
   let depth=botLevel===1?1:(botLevel===2?2:3);
-  let best=-Infinity;
 
-  for(const m of moves){
+  const scored=moves.map(m=>{
     chess.move({from:m.from,to:m.to,promotion:m.promotion||'q'});
     let score=minimax(depth-1,-Infinity,Infinity,false);
-
     // prefer winning captures and checkmate
     if(m.captured) score+=40;
     if(chess.in_checkmate()) score+=100000;
-
     chess.undo();
+    return{move:m,score};
+  }).sort((a,b)=>b.score-a.score);
 
-    if(score>best){
-      best=score;
-      chosen=m;
-    }
+  if(botLevel===1){
+    // Easy: pick randomly among the top few candidate moves instead of always the best one
+    const pool=scored.slice(0,Math.min(4,scored.length));
+    chosen=pool[Math.floor(Math.random()*pool.length)].move;
+  }else{
+    chosen=scored[0].move;
   }
 
   setTimeout(()=>{
@@ -792,17 +858,28 @@ function startBot(level=1){
 function startLocal(){cleanup();mode='local';newBoard();$('topName').textContent='Player 2';$('bottomName').textContent='Player 1';$('topSub').textContent='Black';$('bottomSub').textContent='White';$('topAvatar').textContent='♚';showToast('Local 2P');renderInfo()}
 
 function setTab(tab){
-  $('playCard').style.display=tab==='play'?'block':'none';$('botCard').style.display=tab==='bot'||tab==='play'?'block':'none';$('p2pCard').style.display=tab==='p2p'?'block':'none';
+  $('playCard').style.display=tab==='play'?'block':'none';$('botCard').style.display=tab==='bot'||tab==='play'?'block':'none';$('p2pCard').style.display=tab==='p2p'?'block':'none';$('watchCard').style.display=tab==='watch'?'block':'none';
   document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));$('tab'+tab.charAt(0).toUpperCase()+tab.slice(1)).classList.add('active')
 }
 $('usernameSave').onclick=saveUsername;
 $('usernameInput').onkeydown=e=>{if(e.key==='Enter')saveUsername()};
 $('chatSend').onclick=sendChat; $('chatInput').onkeydown=e=>{if(e.key==='Enter')sendChat()};
 $('hostBtn').onclick=host;$('joinBtn').onclick=join;$('disconnectBtn').onclick=cleanup;
-$('newGameBtn').onclick=()=>mode==='p2p'?(connected&&(newBoard(),send({type:'newgame'}))):newBoard();
+$('watchBtn').onclick=watchRoom;$('watchCode').oninput=()=>$('watchCode').value=$('watchCode').value.replace(/\D/g,'').slice(0,4);
+$('watchCode').addEventListener('keydown',e=>{if(e.key==='Enter')watchRoom()});
+$('stopWatchBtn').onclick=()=>{cleanup();setWatchStatus('not connected');};
+$('newGameBtn').onclick=()=>{
+  if(mode==='watch'){showToast('Spectators cannot control the game');return;}
+  if(mode==='p2p'){connected&&(newBoard(),send({type:'newgame'}),isHost&&syncAllSpectators());}
+  else newBoard();
+};
 $('flipBtn').onclick=()=>{flipped=!flipped;renderBoard()};
-$('resignBtn').onclick=()=>{if(mode==='p2p'&&connected)send({type:'resign'});gameStatusEl.textContent='Ти се отказа.';showToast('Resigned')};
-$('tabPlay').onclick=()=>setTab('play');$('tabP2P').onclick=()=>setTab('p2p');$('tabBot').onclick=()=>setTab('bot');
+$('resignBtn').onclick=()=>{
+  if(mode==='watch'){showToast('Spectators cannot resign');return;}
+  if(mode==='p2p'&&connected){send({type:'resign'});isHost&&broadcastToSpectators({type:'resign'});}
+  gameStatusEl.textContent='You resigned.';showToast('Resigned');
+};
+$('tabPlay').onclick=()=>setTab('play');$('tabP2P').onclick=()=>setTab('p2p');$('tabBot').onclick=()=>setTab('bot');$('tabWatch').onclick=()=>setTab('watch');
 $('modeBot').onclick=()=>startBot(botLevel);$('modeRandom').onclick=()=>setupUsername();
 setupUsername();
 $('usernameSave').onclick=saveUsername;
@@ -817,11 +894,12 @@ $('joinCode').oninput=()=>joinCodeEl.value=joinCodeEl.value.replace(/\D/g,'').sl
 document.querySelectorAll('[data-board-skin]').forEach(b=>b.onclick=()=>{boardSkin=b.dataset.boardSkin;document.querySelectorAll('[data-board-skin]').forEach(x=>x.classList.remove('active'));b.classList.add('active');applySkins()});
 document.querySelectorAll('[data-piece]').forEach(b=>b.onclick=()=>{pieceSkin=b.dataset.piece;document.querySelectorAll('[data-piece]').forEach(x=>x.classList.remove('active'));b.classList.add('active');renderBoard()});
 
-$('gameoverNew').onclick=()=>{hideGameOverModal();newBoard();if(mode==='p2p'&&connected)send({type:'newgame'});};
+$('gameoverNew').onclick=()=>{
+  if(mode==='watch'){hideGameOverModal();return;}
+  hideGameOverModal();newBoard();
+  if(mode==='p2p'&&connected){send({type:'newgame'});isHost&&syncAllSpectators();}
+};
 $('gameoverClose').onclick=hideGameOverModal;
-
-startBot(1);
-
 
 /* ===== Puzzle Mode added ===== */
 const puzzleData = Array.from({length:40},(_,i)=>({
@@ -858,8 +936,7 @@ function startPuzzle(level){
 function puzzleHint(){showToast('💡 Look for checks, captures and strong moves.');}
 function exitPuzzle(){currentPuzzle=null;document.getElementById('puzzlePanel')?.remove();$('boardHint').textContent='Choose a mode on the right';newBoard();}
 
-const oldPuzzleButton=document.querySelector('.nav button:nth-child(2)');
-if(oldPuzzleButton) oldPuzzleButton.onclick=openPuzzleMenu;
+$('navPuzzles').onclick=()=>{setActiveNav($('navPuzzles'));openPuzzleMenu();};
 
 
 /* ===== Learn Mode added ===== */
@@ -892,8 +969,14 @@ function startLesson(i){
 }
 function learnHint(i){showToast('💡 Practice this concept and look at the highlighted moves.');}
 function completeLesson(i){learnXP+=10;showToast('✅ Lesson completed! +10 XP');startLesson(i);}
-const oldLearnButton=document.querySelector('.nav button:nth-child(3)');
-if(oldLearnButton) oldLearnButton.onclick=openLearn;
+$('navLearn').onclick=()=>{setActiveNav($('navLearn'));openLearn();};
+
+function setActiveNav(btn){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+$('navPlay').onclick=()=>{setActiveNav($('navPlay'));document.querySelector('.board-card').scrollIntoView({behavior:'smooth'});};
+$('navWatch').onclick=()=>{setActiveNav($('navWatch'));setTab('watch');document.querySelector('.board-card').scrollIntoView({behavior:'smooth'});};
 
 </script>
 </body>
