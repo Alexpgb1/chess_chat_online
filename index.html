@@ -34,7 +34,42 @@ button{cursor:pointer}
 .square.selected{box-shadow:inset 0 0 0 4px #f6d35f}.square.last{background:#c8b458}.square.check{box-shadow:inset 0 0 0 999px rgba(215,55,55,.45)}.square.legal::after{content:"";width:18%;height:18%;border-radius:50%;background:rgba(25,30,35,.35);position:absolute}.square.capture::after{content:"";position:absolute;inset:6%;border:5px solid rgba(45,45,45,.42);border-radius:50%}
 .square.king-check{animation:kingCheckPulse 1s ease-in-out infinite}
 @keyframes kingCheckPulse{0%,100%{box-shadow:inset 0 0 0 4px rgba(224,91,91,.95);background-color:rgba(224,91,91,.1)}50%{box-shadow:inset 0 0 0 4px rgba(224,91,91,.25);background-color:rgba(224,91,91,.35)}}
-.piece{font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;font-size:clamp(38px,6.1vw,74px);line-height:1;position:relative;z-index:2;transform:translateY(-1px);filter:drop-shadow(0 3px 2px rgba(0,0,0,.28));font-weight:500}.white-piece{color:#f8f8f8;text-shadow:0 1px 0 #fff,0 3px 2px rgba(0,0,0,.48),0 0 1px #222}.black-piece{color:#252525;text-shadow:0 1px 0 rgba(255,255,255,.55),0 3px 2px rgba(0,0,0,.55),0 0 1px #000}
+.piece{font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;font-size:clamp(38px,6.1vw,74px);line-height:1;position:relative;z-index:2;transform:translateY(-1px);filter:drop-shadow(0 3px 2px rgba(0,0,0,.28));font-weight:500}
+.piece{transition:transform .22s ease,opacity .22s ease}.piece.dragging{opacity:.65;transform:scale(1.12)}.square.drag-over{outline:4px solid rgba(246,211,95,.8);outline-offset:-4px}.white-piece{color:#f8f8f8;text-shadow:0 1px 0 #fff,0 3px 2px rgba(0,0,0,.48),0 0 1px #222}.black-piece{color:#252525;text-shadow:0 1px 0 rgba(255,255,255,.55),0 3px 2px rgba(0,0,0,.55),0 0 1px #000}
+
+/* ===== Realistic 3D piece skin ===== */
+.piece.piece-3d{
+  transform:translateY(-3px) scale(1.06);
+  filter:drop-shadow(0 10px 6px rgba(0,0,0,.55)) drop-shadow(0 2px 1px rgba(0,0,0,.35));
+  transition:transform .12s ease;
+}
+.square:hover .piece.piece-3d{transform:translateY(-5px) scale(1.09)}
+.piece.piece-3d.white-piece{
+  background:radial-gradient(circle at 32% 22%,#ffffff 0%,#f1f3f6 18%,#d9dee6 42%,#aeb6c2 68%,#7c8492 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:
+    0 1px 0 rgba(255,255,255,.9),
+    0 -1px 1px rgba(255,255,255,.6),
+    1px 2px 2px rgba(40,45,55,.55),
+    0 5px 3px rgba(0,0,0,.35);
+  -webkit-text-stroke:.6px rgba(70,78,90,.35);
+}
+.piece.piece-3d.black-piece{
+  background:radial-gradient(circle at 32% 22%,#6a7684 0%,#3c4653 20%,#20262e 46%,#101418 72%,#050607 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:
+    0 1px 0 rgba(150,160,175,.5),
+    0 -1px 1px rgba(180,190,205,.35),
+    1px 2px 2px rgba(0,0,0,.65),
+    0 5px 3px rgba(0,0,0,.55);
+  -webkit-text-stroke:.6px rgba(0,0,0,.4);
+}
+.piece.piece-3d::after{
+  content:"";position:absolute;left:50%;bottom:-6px;width:52%;height:14%;
+  transform:translateX(-50%);border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.45) 0%,rgba(0,0,0,0) 72%);
+  z-index:-1;
+}
 .rank,.file{position:absolute;font-size:11px;font-weight:900;z-index:3;opacity:.75}.rank{left:5px;top:4px}.file{right:5px;bottom:4px}.light .rank,.light .file{color:#65707b}.dark .rank,.dark .file{color:#e8edf2}
 .board-bottom{display:flex;justify-content:space-between;align-items:center;padding:12px 5px 2px;color:var(--muted);font-size:12px}
 .side{display:grid;gap:14px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}.card h3{margin:0 0 12px;font-size:15px}
@@ -179,6 +214,7 @@ button{cursor:pointer}
 <div class="piece-grid">
 <button class="skin-btn active" data-piece="classic">♟ Classic</button>
 <button class="skin-btn" data-piece="emoji">😀 Emoji</button>
+<button class="skin-btn" data-piece="real3d">🧊 3D Realistic</button>
 <button class="skin-btn" data-piece="wood">🪵 Wood 3D</button>
 <button class="skin-btn" data-piece="gold">👑 Gold Royal</button>
 <button class="skin-btn" data-piece="silver">⚙️ Metal</button>
@@ -358,7 +394,8 @@ function pieceIcon(color,type){
   silver:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
   neon:{p:'◉',n:'♞',b:'◆',r:'▣',q:'✦',k:'★'},
   fantasy:{p:'🛡️',n:'🐉',b:'🧙',r:'🏰',q:'👸',k:'🤴'},
-  minimal:{p:'●',n:'♞',b:'▲',r:'■',q:'◆',k:'✚'}
+  minimal:{p:'●',n:'♞',b:'▲',r:'■',q:'◆',k:'✚'},
+  real3d:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}
  };
  if(sets[pieceSkin]) return sets[pieceSkin][type];
  return PIECES[color][type];
@@ -526,6 +563,8 @@ function findKingInCheckSquare(){
   }
   return null;
 }
+let dragFrom=null;
+
 function renderBoard(){
   boardEl.innerHTML='';
   const legal=selected?chess.moves({square:selected,verbose:true}):[];
@@ -536,10 +575,28 @@ function renderBoard(){
     if(sq===selected)el.classList.add('selected');if(lastMove&&(sq===lastMove.from||sq===lastMove.to))el.classList.add('last');
     if(kingCheckSq&&sq===kingCheckSq)el.classList.add('king-check');
     const lm=legal.find(m=>m.to===sq);if(lm)el.classList.add(chess.get(sq)?'capture':'legal');
-    const p=chess.get(sq);if(p){const span=document.createElement('span');span.className='piece '+(p.color==='w'?'white-piece':'black-piece');span.textContent=pieceIcon(p.color,p.type);el.appendChild(span)}
-    if(c===0){const rank=document.createElement('span');rank.className='rank';rank.textContent=8-r;el.appendChild(rank)}
-    if(r===7){const file=document.createElement('span');file.className='file';file.textContent=FILES[c];el.appendChild(file)}
-    el.addEventListener('click',()=>clickSquare(sq));boardEl.appendChild(el);
+    const p=chess.get(sq);
+    if(p){
+      const span=document.createElement('span');
+      span.className='piece '+(p.color==='w'?'white-piece':'black-piece')+(pieceSkin==='real3d'?' piece-3d':'');
+      span.textContent=pieceIcon(p.color,p.type);
+      span.draggable=true;
+      span.addEventListener('dragstart',()=>{dragFrom=sq;span.classList.add('dragging')});
+      span.addEventListener('dragend',()=>{span.classList.remove('dragging');dragFrom=null});
+      el.appendChild(span);
+    }
+    el.addEventListener('dragover',e=>{e.preventDefault();el.classList.add('drag-over')});
+    el.addEventListener('dragleave',()=>el.classList.remove('drag-over'));
+    el.addEventListener('drop',e=>{
+      e.preventDefault();el.classList.remove('drag-over');
+      if(dragFrom && dragFrom!==sq){
+        const moves=chess.moves({square:dragFrom,verbose:true});
+        const move=moves.find(m=>m.to===sq);
+        if(move) makePlayerMove({from:dragFrom,to:sq,promotion:move.promotion||undefined});
+      }
+    });
+    el.addEventListener('click',()=>clickSquare(sq));
+    boardEl.appendChild(el);
   }
 }
 function renderMoves(){
