@@ -32,6 +32,8 @@ button{cursor:pointer}
 .board-wrap{display:flex;justify-content:center}.board{width:min(72vh,720px,78vw);height:min(72vh,720px,78vw);aspect-ratio:1/1;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));grid-template-rows:repeat(8,minmax(0,1fr));border-radius:5px;overflow:hidden;box-shadow:0 18px 40px rgba(0,0,0,.45)}
 .square{position:relative;width:100%;height:100%;min-width:0;min-height:0;display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none;aspect-ratio:1/1}.light{background:var(--light)}.dark{background:var(--dark)}
 .square.selected{box-shadow:inset 0 0 0 4px #f6d35f}.square.last{background:#c8b458}.square.check{box-shadow:inset 0 0 0 999px rgba(215,55,55,.45)}.square.legal::after{content:"";width:18%;height:18%;border-radius:50%;background:rgba(25,30,35,.35);position:absolute}.square.capture::after{content:"";position:absolute;inset:6%;border:5px solid rgba(45,45,45,.42);border-radius:50%}
+.square.king-check{animation:kingCheckPulse 1s ease-in-out infinite}
+@keyframes kingCheckPulse{0%,100%{box-shadow:inset 0 0 0 4px rgba(224,91,91,.95);background-color:rgba(224,91,91,.1)}50%{box-shadow:inset 0 0 0 4px rgba(224,91,91,.25);background-color:rgba(224,91,91,.35)}}
 .piece{font-family:"DejaVu Sans","Segoe UI Symbol","Noto Sans Symbols 2",serif;font-size:clamp(38px,6.1vw,74px);line-height:1;position:relative;z-index:2;transform:translateY(-1px);filter:drop-shadow(0 3px 2px rgba(0,0,0,.28));font-weight:500}.white-piece{color:#f8f8f8;text-shadow:0 1px 0 #fff,0 3px 2px rgba(0,0,0,.48),0 0 1px #222}.black-piece{color:#252525;text-shadow:0 1px 0 rgba(255,255,255,.55),0 3px 2px rgba(0,0,0,.55),0 0 1px #000}
 .rank,.file{position:absolute;font-size:11px;font-weight:900;z-index:3;opacity:.75}.rank{left:5px;top:4px}.file{right:5px;bottom:4px}.light .rank,.light .file{color:#65707b}.dark .rank,.dark .file{color:#e8edf2}
 .board-bottom{display:flex;justify-content:space-between;align-items:center;padding:12px 5px 2px;color:var(--muted);font-size:12px}
@@ -242,6 +244,83 @@ let opponentUsername='Opponent';
 
 const $=id=>document.getElementById(id);
 
+/* ===== Sound Engine (Web Audio API — синтезирани звуци, без файлове) ===== */
+const SoundFX=(()=>{
+  let ctx=null;
+  let enabled=(localStorage.getItem('chess_sound')!=='off');
+  function getCtx(){
+    if(!ctx){ try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ ctx=null; } }
+    if(ctx&&ctx.state==='suspended'){ ctx.resume().catch(()=>{}); }
+    return ctx;
+  }
+  // Проста нота с ADSR плик, тип осцилатор и лек нискочестотен филтър за мекота
+  function tone(freq,start,dur,{type='sine',gain=.22,glideTo=null,filter=null}={}){
+    const c=getCtx(); if(!c||!enabled)return;
+    const t0=c.currentTime+start;
+    const osc=c.createOscillator(); osc.type=type; osc.frequency.setValueAtTime(freq,t0);
+    if(glideTo!=null) osc.frequency.exponentialRampToValueAtTime(Math.max(1,glideTo),t0+dur);
+    const g=c.createGain(); g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(gain,t0+.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    let node=osc;
+    if(filter){ const f=c.createBiquadFilter(); f.type=filter.type||'lowpass'; f.frequency.value=filter.freq||2200; node.connect(f); node=f; }
+    node.connect(g); g.connect(c.destination);
+    osc.start(t0); osc.stop(t0+dur+.03);
+  }
+  function noiseBurst(start,dur,{gain=.18,filterFreq=1800}={}){
+    const c=getCtx(); if(!c||!enabled)return;
+    const t0=c.currentTime+start;
+    const bufSize=Math.max(1,Math.floor(c.sampleRate*dur));
+    const buf=c.createBuffer(1,bufSize,c.sampleRate);
+    const data=buf.getChannelData(0);
+    for(let i=0;i<bufSize;i++) data[i]=(Math.random()*2-1)*(1-i/bufSize);
+    const src=c.createBufferSource(); src.buffer=buf;
+    const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=filterFreq;
+    const g=c.createGain(); g.gain.setValueAtTime(gain,t0); g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    src.connect(f); f.connect(g); g.connect(c.destination);
+    src.start(t0); src.stop(t0+dur+.02);
+  }
+  return{
+    setEnabled(v){enabled=v;localStorage.setItem('chess_sound',v?'on':'off');},
+    isEnabled(){return enabled;},
+    move(){ // 🔊 плавен, мек звук при обикновено местене
+      tone(300,0,.085,{type:'sine',gain:.16,glideTo:230,filter:{type:'lowpass',freq:1500}});
+    },
+    capture(){ // ⚔️ по-остър, различим звук при вземане на пешка/фигура
+      tone(190,0,.09,{type:'square',gain:.10,glideTo:110,filter:{type:'lowpass',freq:1200}});
+      noiseBurst(0,.06,{gain:.22,filterFreq:900});
+    },
+    check(){ // 👑 отчетлив предупредителен звук при шах
+      tone(660,0,.11,{type:'triangle',gain:.20});
+      tone(880,.09,.16,{type:'triangle',gain:.18});
+    },
+    checkmate(){ // 🏆 по-богат, тържествен/финален звук при мат
+      const notes=[523.25,659.25,783.99,1046.5];
+      notes.forEach((f,i)=>tone(f,i*.11,.28,{type:'triangle',gain:.22,filter:{type:'lowpass',freq:3000}}));
+      tone(261.6,.02,.5,{type:'sine',gain:.12});
+    },
+    lowTime(){ // ⏱️ кратко, настойчиво предупреждение при малко останало време
+      tone(1000,0,.07,{type:'square',gain:.14});
+    },
+    click(){ // 🎮 лек UI звук при клик
+      tone(700,0,.035,{type:'sine',gain:.07,filter:{type:'highpass',freq:300}});
+    },
+    gameStart(){
+      tone(392,0,.09,{type:'sine',gain:.14});
+      tone(523.25,.08,.14,{type:'sine',gain:.14});
+    }
+  };
+})();
+// Отключваме AudioContext при първо потребителско взаимодействие (изисквано от браузърите)
+['click','touchstart','keydown'].forEach(evt=>document.addEventListener(evt,()=>{
+  try{ if(SoundFX && typeof SoundFX.isEnabled==='function'){} }catch(e){}
+},{once:true,passive:true}));
+// 🎮 Универсален UI click звук за всички бутони/интерактивни контроли
+document.addEventListener('click',e=>{
+  const t=e.target.closest('button,.mode,.skin-btn,.room-join,.tabs button');
+  if(t) SoundFX.click();
+},true);
+
 function updatePlayerNames(){
   if(username) $('bottomName').textContent=username;
   if(opponentUsername && opponentUsername!=='Opponent') $('topName').textContent=opponentUsername;
@@ -383,7 +462,17 @@ function cleanup(){
   roomCodeEl.textContent='----'; setStatus('not connected');
   $('connectionDot').classList.remove('ok'); $('connectionPill').textContent='Offline';
 }
-function newBoard(){hideGameOverModal();chess=new Chess();selected=null;lastMove=null;botThinking=false;renderBoard();renderInfo();renderMoves()}
+function newBoard(){
+  hideGameOverModal();
+  chess=new Chess();selected=null;lastMove=null;botThinking=false;
+  // 🔄 нулиране на часовника и ефектите при New Game
+  if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
+  gameClockRunning=false;
+  whiteTime=600;blackTime=600;
+  updateClockDisplay();
+  renderBoard();renderInfo();renderMoves();
+  SoundFX.gameStart();
+}
 function setOnlineUI(ok){$('connectionDot').classList.toggle('ok',ok);$('connectionPill').textContent=ok?'P2P Connected':'Offline'}
 
 function setupConn(c,color,host){
@@ -422,19 +511,30 @@ function handleData(data){
   else if(data.type==='start'){chess=new Chess(data.fen);selected=null;lastMove=null;renderBoard();renderInfo();renderMoves()}
   else if(data.type==='ready'&&isHost)send({type:'start',fen:chess.fen(),history:chess.history()});
   else if(data.type==='move'){
-    try{const m=chess.move(data.move);if(!m)return;lastMove={from:data.move.from,to:data.move.to};selected=null;renderBoard();renderInfo();renderMoves()}catch(e){console.error(e)}
+    try{const m=chess.move(data.move);if(!m)return;if(!gameClockRunning)startClock();lastMove={from:data.move.from,to:data.move.to};selected=null;renderBoard();renderInfo();renderMoves();playMoveResultSound(m)}catch(e){console.error(e)}
   } else if(data.type==='newgame'){newBoard()}
   else if(data.type==='resign'){gameStatusEl.textContent='The opponent has given up. You win!';$('gameResult').textContent='1–0 / 0–1'}
 }
 
 function squareName(row,col){return FILES[col]+(8-row)}
+function findKingInCheckSquare(){
+  if(!chess.in_check())return null;
+  const turn=chess.turn(), board=chess.board();
+  for(let r=0;r<8;r++)for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(p&&p.type==='k'&&p.color===turn)return squareName(r,c);
+  }
+  return null;
+}
 function renderBoard(){
   boardEl.innerHTML='';
   const legal=selected?chess.moves({square:selected,verbose:true}):[];
+  const kingCheckSq=findKingInCheckSquare();
   for(let vr=0;vr<8;vr++)for(let vc=0;vc<8;vc++){
     const r=flipped?7-vr:vr,c=flipped?7-vc:vc,sq=squareName(r,c);
     const el=document.createElement('div');el.className='square '+((r+c)%2===0?'light':'dark');
     if(sq===selected)el.classList.add('selected');if(lastMove&&(sq===lastMove.from||sq===lastMove.to))el.classList.add('last');
+    if(kingCheckSq&&sq===kingCheckSq)el.classList.add('king-check');
     const lm=legal.find(m=>m.to===sq);if(lm)el.classList.add(chess.get(sq)?'capture':'legal');
     const p=chess.get(sq);if(p){const span=document.createElement('span');span.className='piece '+(p.color==='w'?'white-piece':'black-piece');span.textContent=pieceIcon(p.color,p.type);el.appendChild(span)}
     if(c===0){const rank=document.createElement('span');rank.className='rank';rank.textContent=8-r;el.appendChild(rank)}
@@ -471,6 +571,7 @@ function updateClockDisplay(){
   $('topClock').textContent=f(blackTime);
   $('bottomClock').textContent=f(whiteTime);
 }
+const LOW_TIME_THRESHOLD=10; // секунди, под които звучи предупреждението
 function startClock(){
   if(clockTimer) clearInterval(clockTimer);
   gameClockRunning=true;
@@ -479,6 +580,8 @@ function startClock(){
     if(chess.turn()==='w') whiteTime=Math.max(0,whiteTime-1);
     else blackTime=Math.max(0,blackTime-1);
     updateClockDisplay();
+    const activeTime=chess.turn()==='w'?whiteTime:blackTime;
+    if(activeTime>0&&activeTime<=LOW_TIME_THRESHOLD) SoundFX.lowTime(); // ⏱️ звуково предупреждение при малко време
     if(whiteTime===0||blackTime===0){gameClockRunning=false;clearInterval(clockTimer);showToast('Time out');}
   },1000);
 }
@@ -522,10 +625,18 @@ function openPromotion(from,to){
   $('promotion').classList.add('show');
 }
 document.querySelectorAll('.promo').forEach(b=>b.addEventListener('click',()=>{const f=promotionResolve;promotionResolve=null;$('promotion').classList.remove('show');f(b.dataset.p)}));
+function playMoveResultSound(made){
+  if(!made)return;
+  if(chess.in_checkmate()) SoundFX.checkmate();
+  else if(chess.in_check()) SoundFX.check();
+  else if(made.captured) SoundFX.capture();
+  else SoundFX.move();
+}
 function applyMove(payload,sendIt){
   const made=chess.move(payload);if(!made)return;
   if(!gameClockRunning) startClock();
   lastMove={from:payload.from,to:payload.to};selected=null;renderBoard();renderInfo();renderMoves();
+  playMoveResultSound(made);
   if(sendIt&&mode==='p2p')send({type:'move',move:payload});
   if(mode==='bot'&&chess.turn()==='b'&&!chess.game_over())setTimeout(botMove,250);
 }
