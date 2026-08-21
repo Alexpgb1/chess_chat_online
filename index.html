@@ -6,12 +6,6 @@
 <title>BlockHub Chess Arena</title>
 <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-<script>
-// ===== Redesign animations =====
-let dashGames=Number(localStorage.getItem('dashGames')||0);
-const dashGamesEl=document.getElementById('dashGames');
-if(dashGamesEl) dashGamesEl.textContent=dashGames;
-</script>
 
 <style>
 :root{
@@ -109,6 +103,42 @@ button{cursor:pointer}
 .board-green .light{background:#dbe7c8}.board-green .dark{background:#769656}
 .board-blue .light{background:#d8efff}.board-blue .dark{background:#5b88b2}
 .board-dark .light{background:#777}.board-dark .dark{background:#222}
+.board-marble .light{background:#eceff1}.board-marble .dark{background:#93a0a8}
+.board-coral .light{background:#ffe4d6}.board-coral .dark{background:#e0805c}
+.board-walnut .light{background:#dcb98d}.board-walnut .dark{background:#6e4322}
+.board-midnight .light{background:#ccd2f2}.board-midnight .dark{background:#3f4488}
+/* checkerboard previews so each skin can be seen at a glance */
+.skin-preview.board-wood{background:conic-gradient(#b58863 25%,#f0d9b5 0 50%,#b58863 0 75%,#f0d9b5 0);background-size:16px 16px}
+.skin-preview.board-green{background:conic-gradient(#769656 25%,#dbe7c8 0 50%,#769656 0 75%,#dbe7c8 0);background-size:16px 16px}
+.skin-preview.board-blue{background:conic-gradient(#5b88b2 25%,#d8efff 0 50%,#5b88b2 0 75%,#d8efff 0);background-size:16px 16px}
+.skin-preview.board-dark{background:conic-gradient(#222 25%,#777 0 50%,#222 0 75%,#777 0);background-size:16px 16px}
+.skin-preview.board-marble{background:conic-gradient(#93a0a8 25%,#eceff1 0 50%,#93a0a8 0 75%,#eceff1 0);background-size:16px 16px}
+.skin-preview.board-coral{background:conic-gradient(#e0805c 25%,#ffe4d6 0 50%,#e0805c 0 75%,#ffe4d6 0);background-size:16px 16px}
+.skin-preview.board-walnut{background:conic-gradient(#6e4322 25%,#dcb98d 0 50%,#6e4322 0 75%,#dcb98d 0);background-size:16px 16px}
+.skin-preview.board-midnight{background:conic-gradient(#3f4488 25%,#ccd2f2 0 50%,#3f4488 0 75%,#ccd2f2 0);background-size:16px 16px}
+
+/* piece skin colors — real chess glyphs (not emoji), each with a distinct finish */
+.piece.piece-wood.white-piece{background:linear-gradient(160deg,#f4e3c1 0%,#d9b98a 45%,#a9784a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(60,35,10,.4)}
+.piece.piece-wood.black-piece{background:linear-gradient(160deg,#6b4423 0%,#432a15 55%,#211407 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(0,0,0,.6)}
+.piece.piece-gold.white-piece{background:linear-gradient(160deg,#fff8dc 0%,#f6d365 40%,#caa63d 70%,#8a6a1a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(80,60,0,.4);-webkit-text-stroke:.4px rgba(120,90,20,.4)}
+.piece.piece-gold.black-piece{background:linear-gradient(160deg,#4a3a10 0%,#2a2008 55%,#100c02 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(0,0,0,.6)}
+.piece.piece-silver.white-piece{background:linear-gradient(160deg,#ffffff 0%,#e4e8ec 40%,#b7c0c9 70%,#838d97 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(30,40,50,.35)}
+.piece.piece-silver.black-piece{background:linear-gradient(160deg,#5a636b 0%,#333a41 55%,#15181b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(0,0,0,.6)}
+.piece.piece-neon.white-piece{color:#c8ffee;text-shadow:0 0 6px #4dffe0,0 0 14px #17c9c9,0 2px 2px rgba(0,0,0,.5)}
+.piece.piece-neon.black-piece{color:#ff5fd1;text-shadow:0 0 6px #ff2fb0,0 0 14px #a8127e,0 2px 2px rgba(0,0,0,.5)}
+.piece.piece-minimal.white-piece{color:#ffffff;text-shadow:none;filter:none;-webkit-text-stroke:1px #cfd6dc}
+.piece.piece-minimal.black-piece{color:#20242a;text-shadow:none;filter:none;-webkit-text-stroke:1px #20242a}
+.piece.piece-ivory.white-piece{color:#fdfaf3;text-shadow:0 1px 0 #fff,0 2px 3px rgba(0,0,0,.45);-webkit-text-stroke:.5px #c9a227}
+.piece.piece-ivory.black-piece{color:#1c1c1c;text-shadow:0 1px 0 rgba(255,255,255,.25),0 2px 3px rgba(0,0,0,.6);-webkit-text-stroke:.5px #c9a227}
+.piece.piece-ocean.white-piece{background:linear-gradient(160deg,#eaf6ff 0%,#b7dcf5 50%,#5fa8d3 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(0,40,70,.35)}
+.piece.piece-ocean.black-piece{background:linear-gradient(160deg,#274a63 0%,#123047 55%,#04141f 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(0,0,0,.6)}
+.piece.piece-bronze.white-piece{background:linear-gradient(160deg,#fff3d6 0%,#e8c179 45%,#b8843a 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(80,40,0,.4)}
+.piece.piece-bronze.black-piece{background:linear-gradient(160deg,#7a4a20 0%,#4a2a10 55%,#201205 100%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 2px 3px rgba(0,0,0,.6)}
+.piece.piece-slate.white-piece{color:#e7ebef;text-shadow:0 1px 0 #fff,0 2px 3px rgba(0,0,0,.4)}
+.piece.piece-slate.black-piece{color:#3a4048;text-shadow:0 1px 0 rgba(255,255,255,.2),0 2px 3px rgba(0,0,0,.55)}
+/* piece skin preview swatches — real rendering, so it's exactly how it'll look on the board */
+.piece-preview{height:46px;border-radius:7px;margin-bottom:5px;display:flex;align-items:center;justify-content:center;gap:10px;background:conic-gradient(#3a4553 25%,#232b34 0 50%,#3a4553 0 75%,#232b34 0);background-size:16px 16px}
+.piece-preview .piece{font-size:26px;position:static;transform:none}
 
 .username-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;place-items:center;z-index:100}
 .username-modal.show{display:grid}
@@ -217,9 +247,9 @@ body{background:radial-gradient(circle at top,#263b55,#080c12 55%);}
         <div class="card" id="botCard">
           <h3>Bot opponent</h3>
           <div class="mode-grid">
-            <button class="mode active" data-level="1">🟢 <b>Easy</b><span>Random good moves</span></button>
-            <button class="mode" data-level="2">🟡 <b>Medium</b><span>Material + position</span></button>
-            <button class="mode" data-level="3">🔴 <b>Hard</b><span>Search deeper</span></button>
+            <button class="mode active" data-level="1">🟢 <b>Easy</b><span>Weak — good for beginners</span></button>
+            <button class="mode" data-level="2">🟡 <b>Medium</b><span>Deep search + full evaluation</span></button>
+            <button class="mode" data-level="3">🔴 <b>Hard</b><span>Deep tactical engine</span></button>
           </div>
         </div>
 
@@ -267,18 +297,26 @@ body{background:radial-gradient(circle at top,#263b55,#080c12 55%);}
 <button class="skin-btn" data-board-skin="green"><div class="skin-preview board-green"></div>Green</button>
 <button class="skin-btn" data-board-skin="blue"><div class="skin-preview board-blue"></div>Ice</button>
 <button class="skin-btn" data-board-skin="dark"><div class="skin-preview board-dark"></div>Dark</button>
+<button class="skin-btn" data-board-skin="marble"><div class="skin-preview board-marble"></div>Marble</button>
+<button class="skin-btn" data-board-skin="coral"><div class="skin-preview board-coral"></div>Coral</button>
+<button class="skin-btn" data-board-skin="walnut"><div class="skin-preview board-walnut"></div>Walnut</button>
+<button class="skin-btn" data-board-skin="midnight"><div class="skin-preview board-midnight"></div>Midnight</button>
 </div>
 <div style="font-size:12px;color:var(--muted);margin:12px 0 8px">Pieces</div>
 <div class="piece-grid">
-<button class="skin-btn active" data-piece="classic">♟ Classic</button>
-<button class="skin-btn" data-piece="emoji">😀 Emoji</button>
-<button class="skin-btn" data-piece="real3d">🧊 3D Realistic</button>
-<button class="skin-btn" data-piece="wood">🪵 Wood 3D</button>
-<button class="skin-btn" data-piece="gold">👑 Gold Royal</button>
-<button class="skin-btn" data-piece="silver">⚙️ Metal</button>
-<button class="skin-btn" data-piece="neon">💠 Neon</button>
-<button class="skin-btn" data-piece="fantasy">🧙 Fantasy</button>
-<button class="skin-btn" data-piece="minimal">⚪ Minimal</button>
+<button class="skin-btn active" data-piece="classic"><div class="piece-preview"><span class="piece white-piece">♔</span><span class="piece black-piece">♚</span></div>Classic</button>
+<button class="skin-btn" data-piece="wood"><div class="piece-preview"><span class="piece white-piece piece-wood">♚</span><span class="piece black-piece piece-wood">♚</span></div>Wood 3D</button>
+<button class="skin-btn" data-piece="gold"><div class="piece-preview"><span class="piece white-piece piece-gold">♚</span><span class="piece black-piece piece-gold">♚</span></div>Gold Royal</button>
+<button class="skin-btn" data-piece="silver"><div class="piece-preview"><span class="piece white-piece piece-silver">♚</span><span class="piece black-piece piece-silver">♚</span></div>Metal</button>
+<button class="skin-btn" data-piece="ivory"><div class="piece-preview"><span class="piece white-piece piece-ivory">♚</span><span class="piece black-piece piece-ivory">♚</span></div>Ivory &amp; Ebony</button>
+<button class="skin-btn" data-piece="ocean"><div class="piece-preview"><span class="piece white-piece piece-ocean">♚</span><span class="piece black-piece piece-ocean">♚</span></div>Ocean</button>
+<button class="skin-btn" data-piece="bronze"><div class="piece-preview"><span class="piece white-piece piece-bronze">♚</span><span class="piece black-piece piece-bronze">♚</span></div>Bronze</button>
+<button class="skin-btn" data-piece="slate"><div class="piece-preview"><span class="piece white-piece piece-slate">♚</span><span class="piece black-piece piece-slate">♚</span></div>Slate</button>
+<button class="skin-btn" data-piece="neon"><div class="piece-preview"><span class="piece white-piece piece-neon">♚</span><span class="piece black-piece piece-neon">♚</span></div>Neon</button>
+<button class="skin-btn" data-piece="minimal"><div class="piece-preview"><span class="piece white-piece piece-minimal">♚</span><span class="piece black-piece piece-minimal">♚</span></div>Minimal</button>
+<button class="skin-btn" data-piece="real3d"><div class="piece-preview"><span class="piece white-piece piece-3d">♚</span><span class="piece black-piece piece-3d">♚</span></div>3D Realistic</button>
+<button class="skin-btn" data-piece="emoji"><div class="piece-preview"><span class="piece white-piece piece-emoji">🤴</span><span class="piece black-piece piece-emoji">🤴</span></div>Emoji</button>
+<button class="skin-btn" data-piece="fantasy"><div class="piece-preview"><span class="piece white-piece piece-fantasy">🐉</span><span class="piece black-piece piece-fantasy">🧙</span></div>Fantasy</button>
 </div>
 </div>
 
@@ -290,6 +328,7 @@ body{background:radial-gradient(circle at top,#263b55,#080c12 55%);}
         <div class="card actions">
           <button class="btn secondary" id="newGameBtn">New game</button>
           <button class="btn secondary" id="flipBtn">Flip board</button>
+          <button class="btn secondary full" id="drawOfferBtn">Offer draw</button>
           <button class="btn secondary full" id="resignBtn">Resign</button>
         </div>
       </aside>
@@ -326,14 +365,93 @@ body{background:radial-gradient(circle at top,#263b55,#080c12 55%);}
   <button class="btn primary full" id="usernameSave">Continue</button>
  </div>
 </div>
+
+<div class="username-modal" id="readyModal">
+ <div class="username-card">
+  <h2>🤝 Get Ready</h2>
+  <p id="readyModalText">Both players must confirm before the game starts.</p>
+  <button class="btn primary full" id="readyBtn">I'm ready</button>
+  <div class="status" id="readyStatusText" style="margin-top:10px">Waiting for both players to confirm…</div>
+ </div>
+</div>
+
+<div class="username-modal" id="drawOfferModal">
+ <div class="username-card">
+  <h2>🤝 Draw offer</h2>
+  <p id="drawOfferModalText">Your opponent offers a draw. Do you accept?</p>
+  <button class="btn primary full" id="drawAcceptBtn" style="margin-bottom:8px">Accept draw</button>
+  <button class="btn secondary full" id="drawDeclineBtn">Decline</button>
+ </div>
+</div>
 <script>
 'use strict';
 const PIECES={w:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},b:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'}};
 const FILES=['a','b','c','d','e','f','g','h'];
 let chess=new Chess(), selected=null, lastMove=null, peer=null, conn=null, roomId=null, myColor=null;
+let manualDrawEnded=false;
+function isGameOver(){return chess.game_over()||manualDrawEnded}
 let whiteTime=600, blackTime=600, clockTimer=null, gameClockRunning=false;
 let connected=false, isHost=false, mode='bot', botLevel=1, flipped=false, botThinking=false, promotionResolve=null;
 let spectatorConns=[];
+let readyLocal=false, readyRemote=false;
+let statsRecorded=false;
+
+function loadStats(){
+  try{
+    const raw=localStorage.getItem('chess_stats');
+    if(raw){
+      const p=JSON.parse(raw);
+      return{
+        rating:typeof p.rating==='number'?p.rating:1200,
+        games:typeof p.games==='number'?p.games:0,
+        wins:typeof p.wins==='number'?p.wins:0,
+        losses:typeof p.losses==='number'?p.losses:0,
+        draws:typeof p.draws==='number'?p.draws:0,
+        streak:typeof p.streak==='number'?p.streak:0
+      };
+    }
+  }catch(e){}
+  return{rating:1200,games:0,wins:0,losses:0,draws:0,streak:0};
+}
+let stats=loadStats();
+function saveStats(){ try{localStorage.setItem('chess_stats',JSON.stringify(stats));}catch(e){} }
+function renderStats(){
+  $('dashRating').textContent=stats.rating;
+  $('dashGames').textContent=stats.games;
+  $('dashWins').textContent=stats.wins;
+  $('dashStreak').textContent='🔥 '+stats.streak;
+}
+const BOT_RATING={1:900,2:1300,3:1700};
+function eloDelta(playerRating,oppRating,score){
+  const K=32;
+  const expected=1/(1+Math.pow(10,(oppRating-playerRating)/400));
+  return Math.round(K*(score-expected));
+}
+function recordGameResult(result){ // 'win' | 'loss' | 'draw' — only bot & p2p games count
+  if(mode!=='bot'&&mode!=='p2p')return;
+  if(statsRecorded)return;
+  statsRecorded=true;
+  const oppRating=mode==='bot'?(BOT_RATING[botLevel]||1200):stats.rating;
+  const score=result==='win'?1:(result==='draw'?0.5:0);
+  const delta=eloDelta(stats.rating,oppRating,score);
+  stats.rating=Math.max(100,stats.rating+delta);
+  stats.games+=1;
+  if(result==='win'){stats.wins+=1;stats.streak+=1;}
+  else{stats.streak=0;if(result==='loss')stats.losses+=1;else stats.draws+=1;}
+  saveStats();renderStats();
+}
+function recordGameEndIfNeeded(){
+  if(statsRecorded||(mode!=='bot'&&mode!=='p2p'))return;
+  let result;
+  if(chess.in_checkmate()){
+    const loserColor=chess.turn();
+    const myEffectiveColor=mode==='bot'?'w':myColor;
+    result=loserColor===myEffectiveColor?'loss':'win';
+  }else{
+    result='draw';
+  }
+  recordGameResult(result);
+}
 let username=localStorage.getItem('chess_username')||'';
 let opponentUsername='Opponent';
 
@@ -441,7 +559,7 @@ const turnTextEl=$('turnText'), gameStatusEl=$('gameStatus'), movesEl=$('moves')
 
 let boardSkin='wood', pieceSkin='classic';
 function applySkins(){
-  boardEl.classList.remove('board-wood','board-green','board-blue','board-dark');
+  boardEl.classList.remove('board-wood','board-green','board-blue','board-dark','board-marble','board-coral','board-walnut','board-midnight');
   boardEl.classList.add('board-'+boardSkin);
   renderBoard();
 }
@@ -449,8 +567,12 @@ function pieceIcon(color,type){
  const sets={
   emoji:{p:'👤',n:'🐴',b:'⛪',r:'🏰',q:'👑',k:'🤴'},
   wood:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
-  gold:{p:'♙',n:'♘',b:'♗',r:'♖',q:'♕',k:'♔'},
+  gold:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
   silver:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
+  ivory:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
+  ocean:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
+  bronze:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
+  slate:{p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'},
   neon:{p:'◉',n:'♞',b:'◆',r:'▣',q:'✦',k:'★'},
   fantasy:{p:'🛡️',n:'🐉',b:'🧙',r:'🏰',q:'👸',k:'🤴'},
   minimal:{p:'●',n:'♞',b:'▲',r:'■',q:'◆',k:'✚'},
@@ -474,12 +596,15 @@ function cleanup(){
   spectatorConns=[];
   if(peer){try{peer.destroy()}catch(e){} peer=null}
   connected=false; myColor=null; roomId=null; isHost=false;
+  readyLocal=false;readyRemote=false;hideReadyModal();
   roomCodeEl.textContent='----'; setStatus('not connected');
   $('connectionDot').classList.remove('ok'); $('connectionPill').textContent='Offline';
 }
 function newBoard(){
   hideGameOverModal();
-  chess=new Chess();selected=null;lastMove=null;botThinking=false;
+  $('drawOfferModal').classList.remove('show');
+  manualDrawEnded=false;
+  chess=new Chess();selected=null;lastMove=null;botThinking=false;statsRecorded=false;
   // 🔄 reset the clock and effects on New Game
   if(clockTimer){clearInterval(clockTimer);clockTimer=null;}
   gameClockRunning=false;
@@ -514,6 +639,36 @@ function setupSpectatorConn(c){
   c.on('error',()=>{spectatorConns=spectatorConns.filter(x=>x!==c);});
 }
 
+function showReadyModal(){
+  readyLocal=false;readyRemote=false;
+  $('readyBtn').disabled=false;$('readyBtn').textContent="I'm ready";
+  $('readyStatusText').textContent='Waiting for both players to confirm…';
+  $('readyModal').classList.add('show');
+}
+function hideReadyModal(){ $('readyModal').classList.remove('show'); }
+function updateReadyStatusText(){
+  if(readyLocal&&readyRemote)$('readyStatusText').textContent='Both ready — starting…';
+  else if(readyLocal)$('readyStatusText').textContent='Waiting for opponent…';
+  else if(readyRemote)$('readyStatusText').textContent='Opponent is ready — press "I\'m ready" to start!';
+  else $('readyStatusText').textContent='Waiting for both players to confirm…';
+}
+function markLocalReady(){
+  if(readyLocal||!connected)return;
+  readyLocal=true;
+  $('readyBtn').disabled=true;$('readyBtn').textContent='Waiting for opponent…';
+  updateReadyStatusText();
+  send({type:'playerReady'});
+  maybeStartAfterReady();
+}
+function maybeStartAfterReady(){
+  if(readyLocal&&readyRemote&&isHost){
+    newBoard();
+    send({type:'start',fen:chess.fen(),history:chess.history()});
+    syncAllSpectators();
+    hideReadyModal();
+  }
+}
+
 function setupConn(c,color,host){
   conn=c;myColor=color;isHost=host;
   conn.on('open',()=>{
@@ -521,11 +676,11 @@ function setupConn(c,color,host){
     $('bottomName').textContent=color==='w'?username+' — White':opponentUsername+' — White';
     $('topName').textContent=color==='b'?username+' — Black':opponentUsername+' — Black';
     send({type:'username',name:username});
-     if(isHost){newBoard();send({type:'start',fen:chess.fen(),history:chess.history()});syncAllSpectators();} else send({type:'ready'});
+    showReadyModal();
     renderInfo();
   });
   conn.on('data',handleData);
-  conn.on('close',()=>{connected=false;setOnlineUI(false);setStatus('the connection is broken','err');gameStatusEl.textContent='The opponent left the party.';if(isHost)broadcastToSpectators({type:'opponentLeft'});});
+  conn.on('close',()=>{connected=false;setOnlineUI(false);setStatus('the connection is broken','err');gameStatusEl.textContent='The opponent left the party.';hideReadyModal();$('drawOfferModal').classList.remove('show');if(isHost)broadcastToSpectators({type:'opponentLeft'});});
   conn.on('error',e=>{console.error(e);setStatus('connection error','err')});
 }
 function host(){
@@ -587,6 +742,8 @@ function handleSpectatorData(data){
     }catch(e){console.error(e)}
   }else if(data.type==='resign'){
     gameStatusEl.textContent='A player resigned.';showToast('A player resigned');
+  }else if(data.type==='drawResult'){
+    manualDrawEnded=true;gameStatusEl.textContent='The players agreed to a draw.';showToast('The players agreed to a draw');
   }else if(data.type==='opponentLeft'){
     gameStatusEl.textContent='A player left the game.';showToast('A player left the game');
   }
@@ -594,13 +751,33 @@ function handleSpectatorData(data){
 function handleData(data){
   if(!data||typeof data!=='object')return;
   if(data.type==='username'){opponentUsername=data.name||'Opponent';updatePlayerNames();if(isHost)syncAllSpectators();return;}
+  if(data.type==='playerReady'){readyRemote=true;updateReadyStatusText();maybeStartAfterReady();return;}
   if(data.type==='chat'){addChat(data.text,false,data.name||opponentUsername);}
-  else if(data.type==='start'){chess=new Chess(data.fen);selected=null;lastMove=null;renderBoard();renderInfo();renderMoves()}
-  else if(data.type==='ready'&&isHost)send({type:'start',fen:chess.fen(),history:chess.history()});
+  else if(data.type==='start'){hideReadyModal();statsRecorded=false;manualDrawEnded=false;$('drawOfferModal').classList.remove('show');chess=new Chess(data.fen);selected=null;lastMove=null;renderBoard();renderInfo();renderMoves()}
   else if(data.type==='move'){
     try{const m=chess.move(data.move);if(!m)return;if(!gameClockRunning)startClock();lastMove={from:data.move.from,to:data.move.to};selected=null;renderBoard();renderInfo();renderMoves();playMoveResultSound(m);if(isHost)broadcastToSpectators({type:'move',move:data.move,whiteTime,blackTime});}catch(e){console.error(e)}
   } else if(data.type==='newgame'){newBoard();if(isHost)syncAllSpectators();}
-  else if(data.type==='resign'){gameStatusEl.textContent='The opponent has given up. You win!';$('gameResult').textContent='1–0 / 0–1';if(isHost)broadcastToSpectators({type:'resign'});}
+  else if(data.type==='resign'){gameStatusEl.textContent='The opponent has given up. You win!';$('gameResult').textContent='1–0 / 0–1';if(isHost)broadcastToSpectators({type:'resign'});recordGameResult('win');}
+  else if(data.type==='drawOffer'){
+    if(isGameOver())return;
+    $('drawOfferModal').classList.add('show');
+  }
+  else if(data.type==='drawResponse'){
+    if(data.accepted){
+      finalizeAgreedDraw();
+      if(isHost)broadcastToSpectators({type:'drawResult'});
+    }else{
+      showToast('Opponent declined the draw');
+    }
+  }
+}
+function finalizeAgreedDraw(){
+  if(manualDrawEnded)return;
+  manualDrawEnded=true;
+  gameClockRunning=false;
+  if(clockTimer)clearInterval(clockTimer);
+  $('drawOfferModal').classList.remove('show');
+  renderInfo();
 }
 
 function squareName(row,col){return FILES[col]+(8-row)}
@@ -629,7 +806,7 @@ function renderBoard(){
     const allowedDragColor=mode==='p2p'?myColor:(mode==='bot'?'w':chess.turn());
     if(p){
       const span=document.createElement('span');
-      span.className='piece '+(p.color==='w'?'white-piece':'black-piece')+(pieceSkin==='real3d'?' piece-3d':'');
+      span.className='piece '+(p.color==='w'?'white-piece':'black-piece')+' '+(pieceSkin==='real3d'?'piece-3d':'piece-'+pieceSkin);
       span.textContent=pieceIcon(p.color,p.type);
       const canDrag=mode!=='watch'&&p.color===allowedDragColor&&chess.turn()===p.color&&(mode!=='p2p'||connected);
       span.draggable=canDrag;
@@ -642,7 +819,7 @@ function renderBoard(){
     el.addEventListener('drop',e=>{
       e.preventDefault();el.classList.remove('drag-over');
       if(mode==='watch')return;
-      if(chess.game_over()||botThinking)return;
+      if(isGameOver()||botThinking)return;
       if(mode==='p2p'&&(!connected||chess.turn()!==myColor)){dragFrom=null;return;}
       if(mode==='bot'&&chess.turn()==='b')return;
       if(dragFrom && dragFrom!==sq){
@@ -670,10 +847,11 @@ function renderMoves(){
 }
 
 function showGameOverModal(){
-  if(!chess.game_over()) return;
+  if(!isGameOver()) return;
   const modal=$('gameoverModal'), title=$('gameoverTitle'), text=$('gameoverText'), icon=$('gameoverIcon');
   let t='Game Over', msg='The game has ended.';
-  if(chess.in_checkmate()){
+  if(manualDrawEnded&&!chess.game_over()){t='Draw';msg='Both players agreed to a draw.';icon.textContent='½–½';}
+  else if(chess.in_checkmate()){
     const winner=chess.turn()==='w'?'Black':'White';
     t='Checkmate';
     msg=winner+' wins by checkmate.';
@@ -696,7 +874,7 @@ function startClock(){
   if(clockTimer) clearInterval(clockTimer);
   gameClockRunning=true;
   clockTimer=setInterval(()=>{
-    if(!gameClockRunning||chess.game_over()){clearInterval(clockTimer);return;}
+    if(!gameClockRunning||isGameOver()){clearInterval(clockTimer);return;}
     if(chess.turn()==='w') whiteTime=Math.max(0,whiteTime-1);
     else blackTime=Math.max(0,blackTime-1);
     updateClockDisplay();
@@ -707,7 +885,7 @@ function startClock(){
 }
 
 function renderInfo(){
-  turnTextEl.textContent=chess.game_over()?'The game is over.':mode==='p2p'?(chess.turn()===myColor?'Your move':"Opponent's move"):mode==='watch'?(chess.turn()==='w'?"White's move":"Black's move"):(chess.turn()==='w'?'Your move':'The bot thinks…');
+  turnTextEl.textContent=isGameOver()?'The game is over.':mode==='p2p'?(chess.turn()===myColor?'Your move':"Opponent's move"):mode==='watch'?(chess.turn()==='w'?"White's move":"Black's move"):(chess.turn()==='w'?'Your move':'The bot thinks…');
   let s='';
   if(chess.in_checkmate())s='♚ Checkmate! '+(chess.turn()==='w'?'Black':'White')+' wins.';
   else if(chess.in_stalemate())s='Pat — draw.';
@@ -719,12 +897,12 @@ function renderInfo(){
   else s=mode==='p2p'?(connected?'Game is active.':'Connect to an opponent.'):(mode==='local'?'Local 2P — Play on one screen.':'Play against a bot.');
   gameStatusEl.textContent=s;
   $('boardHint').textContent=mode==='bot'?'Bot mode':mode==='p2p'?'P2P 1v1':mode==='watch'?'Watching':'Local 2P';
-  if(chess.game_over()){$('gameResult').textContent='Game over';showGameOverModal()}
+  if(isGameOver()){$('gameResult').textContent='Game over';showGameOverModal();recordGameEndIfNeeded();}
 }
 
 function clickSquare(sq){
   if(mode==='watch')return;
-  if(chess.game_over()||botThinking)return;
+  if(isGameOver()||botThinking)return;
   if(mode==='p2p'&&(!connected||chess.turn()!==myColor)){showToast(connected?'Wait for opponent turn':'Connect first');return}
   if(mode==='bot'&&chess.turn()==='b'){return}
   const p=chess.get(sq);
@@ -763,32 +941,92 @@ function applyMove(payload,sendIt){
   if(mode==='bot'&&chess.turn()==='b'&&!chess.game_over())setTimeout(botMove,250);
 }
 
+const PIECE_VALUES={p:100,n:320,b:330,r:500,q:900,k:20000};
+const PST={
+  p:[  0,  0,  0,  0,  0,  0,  0,  0,
+      50, 50, 50, 50, 50, 50, 50, 50,
+      10, 10, 20, 30, 30, 20, 10, 10,
+       5,  5, 10, 25, 25, 10,  5,  5,
+       0,  0,  0, 20, 20,  0,  0,  0,
+       5, -5,-10,  0,  0,-10, -5,  5,
+       5, 10, 10,-20,-20, 10, 10,  5,
+       0,  0,  0,  0,  0,  0,  0,  0],
+  n:[-50,-40,-30,-30,-30,-30,-40,-50,
+     -40,-20,  0,  0,  0,  0,-20,-40,
+     -30,  0, 10, 15, 15, 10,  0,-30,
+     -30,  5, 15, 20, 20, 15,  5,-30,
+     -30,  0, 15, 20, 20, 15,  0,-30,
+     -30,  5, 10, 15, 15, 10,  5,-30,
+     -40,-20,  0,  5,  5,  0,-20,-40,
+     -50,-40,-30,-30,-30,-30,-40,-50],
+  b:[-20,-10,-10,-10,-10,-10,-10,-20,
+     -10,  0,  0,  0,  0,  0,  0,-10,
+     -10,  0,  5, 10, 10,  5,  0,-10,
+     -10,  5,  5, 10, 10,  5,  5,-10,
+     -10,  0, 10, 10, 10, 10,  0,-10,
+     -10, 10, 10, 10, 10, 10, 10,-10,
+     -10,  5,  0,  0,  0,  0,  5,-10,
+     -20,-10,-10,-10,-10,-10,-10,-20],
+  r:[  0,  0,  0,  0,  0,  0,  0,  0,
+       5, 10, 10, 10, 10, 10, 10,  5,
+      -5,  0,  0,  0,  0,  0,  0, -5,
+      -5,  0,  0,  0,  0,  0,  0, -5,
+      -5,  0,  0,  0,  0,  0,  0, -5,
+      -5,  0,  0,  0,  0,  0,  0, -5,
+      -5,  0,  0,  0,  0,  0,  0, -5,
+       0,  0,  0,  5,  5,  0,  0,  0],
+  q:[-20,-10,-10, -5, -5,-10,-10,-20,
+     -10,  0,  0,  0,  0,  0,  0,-10,
+     -10,  0,  5,  5,  5,  5,  0,-10,
+      -5,  0,  5,  5,  5,  5,  0, -5,
+       0,  0,  5,  5,  5,  5,  0, -5,
+     -10,  5,  5,  5,  5,  5,  0,-10,
+     -10,  0,  5,  0,  0,  0,  0,-10,
+     -20,-10,-10, -5, -5,-10,-10,-20],
+  k:[-30,-40,-40,-50,-50,-40,-40,-30,
+     -30,-40,-40,-50,-50,-40,-40,-30,
+     -30,-40,-40,-50,-50,-40,-40,-30,
+     -30,-40,-40,-50,-50,-40,-40,-30,
+     -20,-30,-30,-40,-40,-30,-30,-20,
+     -10,-20,-20,-20,-20,-20,-20,-10,
+      20, 20,  0,  0,  0,  0, 20, 20,
+      20, 30, 10,  0,  0, 10, 30, 20]
+};
+function pstValue(type,color,r,c){
+  const idx=color==='w'?r*8+c:(7-r)*8+c;
+  return PST[type][idx];
+}
 function evaluateBoard(){
-  const vals={p:100,n:320,b:335,r:510,q:950,k:20000};
-  const pst={
-    p:[0,5,5,-5,-5,5,10,0],
-    n:[-50,-20,0,5,5,0,-20,-50],
-    b:[-20,0,10,15,15,10,0,-20],
-    r:[0,5,5,10,10,5,5,0],
-    q:[-10,0,5,10,10,5,0,-10],
-    k:[20,30,10,0,0,10,30,20]
-  };
   let s=0;
+  const pawnFiles={w:new Array(8).fill(0),b:new Array(8).fill(0)};
+  const board=chess.board();
   for(let r=0;r<8;r++)for(let c=0;c<8;c++){
-    const p=chess.board()[r][c];
-    if(p){
-      let v=vals[p.type];
-      let pos=pst[p.type][p.color==='w'?r:7-r]||0;
-      s+=(p.color==='b'?1:-1)*(v+pos);
-    }
+    const p=board[r][c];
+    if(!p)continue;
+    const v=PIECE_VALUES[p.type]+pstValue(p.type,p.color,r,c);
+    s+=(p.color==='b'?1:-1)*v;
+    if(p.type==='p')pawnFiles[p.color][c]++;
   }
-  if(chess.in_check()) s+=(chess.turn()==='b'?15:-15);
+  for(let c=0;c<8;c++){
+    if(pawnFiles.w[c]>1)s-=15*(pawnFiles.w[c]-1);
+    if(pawnFiles.b[c]>1)s+=15*(pawnFiles.b[c]-1);
+  }
+  // being in check is bad for the side to move, not good
+  if(chess.in_check())s+=(chess.turn()==='b'?-20:20);
   return s;
 }
+function orderMoves(moves){
+  return moves.slice().sort((a,b)=>{
+    const av=a.captured?(PIECE_VALUES[a.captured]*10-PIECE_VALUES[a.piece]):0;
+    const bv=b.captured?(PIECE_VALUES[b.captured]*10-PIECE_VALUES[b.piece]):0;
+    return bv-av;
+  });
+}
 function minimax(depth, alpha, beta, maximizing){
+  if(chess.in_checkmate()) return chess.turn()==='b'?(-100000-depth):(100000+depth);
   if(depth===0||chess.game_over()) return evaluateBoard();
 
-  const moves=chess.moves({verbose:true});
+  const moves=orderMoves(chess.moves({verbose:true}));
   if(maximizing){
     let best=-Infinity;
     for(const m of moves){
@@ -819,20 +1057,17 @@ function botMove(){
   botThinking=true;
   renderInfo();
 
-  const moves=chess.moves({verbose:true});
+  const moves=orderMoves(chess.moves({verbose:true}));
   let chosen=moves[Math.floor(Math.random()*moves.length)];
 
-  // Level 1: still playable but now avoids obvious blunders
-  // Level 2: minimax depth 2
-  // Level 3: minimax depth 3 with capture priority
-  let depth=botLevel===1?1:(botLevel===2?2:3);
+  // Level 1 (Easy): shallow search, picks randomly among a few good options — beatable
+  // Level 2 (Medium): depth-3 search with full positional evaluation
+  // Level 3 (Hard): depth-4 search, move ordering, mate-aware — plays real tactics
+  let depth=botLevel===1?1:(botLevel===2?3:4);
 
   const scored=moves.map(m=>{
     chess.move({from:m.from,to:m.to,promotion:m.promotion||'q'});
     let score=minimax(depth-1,-Infinity,Infinity,false);
-    // prefer winning captures and checkmate
-    if(m.captured) score+=40;
-    if(chess.in_checkmate()) score+=100000;
     chess.undo();
     return{move:m,score};
   }).sort((a,b)=>b.score-a.score);
@@ -863,6 +1098,7 @@ function setTab(tab){
 }
 $('usernameSave').onclick=saveUsername;
 $('usernameInput').onkeydown=e=>{if(e.key==='Enter')saveUsername()};
+$('readyBtn').onclick=markLocalReady;
 $('chatSend').onclick=sendChat; $('chatInput').onkeydown=e=>{if(e.key==='Enter')sendChat()};
 $('hostBtn').onclick=host;$('joinBtn').onclick=join;$('disconnectBtn').onclick=cleanup;
 $('watchBtn').onclick=watchRoom;$('watchCode').oninput=()=>$('watchCode').value=$('watchCode').value.replace(/\D/g,'').slice(0,4);
@@ -878,10 +1114,30 @@ $('resignBtn').onclick=()=>{
   if(mode==='watch'){showToast('Spectators cannot resign');return;}
   if(mode==='p2p'&&connected){send({type:'resign'});isHost&&broadcastToSpectators({type:'resign'});}
   gameStatusEl.textContent='You resigned.';showToast('Resigned');
+  recordGameResult('loss');
+};
+$('drawOfferBtn').onclick=()=>{
+  if(mode!=='p2p'){showToast('Draw offers are only available in P2P games');return;}
+  if(!connected){showToast('Connect to an opponent first');return;}
+  if(isGameOver()){return;}
+  send({type:'drawOffer'});
+  showToast('Draw offer sent');
+};
+$('drawAcceptBtn').onclick=()=>{
+  $('drawOfferModal').classList.remove('show');
+  send({type:'drawResponse',accepted:true});
+  finalizeAgreedDraw();
+  if(isHost)broadcastToSpectators({type:'drawResult'});
+};
+$('drawDeclineBtn').onclick=()=>{
+  $('drawOfferModal').classList.remove('show');
+  send({type:'drawResponse',accepted:false});
+  showToast('Draw declined');
 };
 $('tabPlay').onclick=()=>setTab('play');$('tabP2P').onclick=()=>setTab('p2p');$('tabBot').onclick=()=>setTab('bot');$('tabWatch').onclick=()=>setTab('watch');
 $('modeBot').onclick=()=>startBot(botLevel);$('modeRandom').onclick=()=>setupUsername();
 setupUsername();
+renderStats();
 $('usernameSave').onclick=saveUsername;
 $('usernameInput').addEventListener('keydown',e=>{if(e.key==='Enter')saveUsername()});
 startBot(1);
